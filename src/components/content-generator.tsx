@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2, Wand2 } from "lucide-react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -48,9 +49,14 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+interface GeneratedContent {
+  content: string;
+  imageUrl?: string;
+}
+
 export default function ContentGenerator() {
   const [isLoading, setIsLoading] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<string | null>(null);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -75,7 +81,7 @@ export default function ContentGenerator() {
         description: result.error,
       });
     } else {
-      setGeneratedContent(result.content);
+      setGeneratedContent(result);
     }
 
     setIsLoading(false);
@@ -201,9 +207,23 @@ export default function ContentGenerator() {
                 <Skeleton className="h-4 w-5/6" />
               </div>
             ) : (
-              <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                {generatedContent}
-              </div>
+              generatedContent && (
+                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                  {generatedContent.imageUrl && (
+                    <div className="my-4 flex justify-center">
+                      <Image
+                        src={generatedContent.imageUrl}
+                        alt="Generated visual aid"
+                        width={512}
+                        height={512}
+                        className="rounded-lg shadow-md"
+                        data-ai-hint="illustration drawing"
+                      />
+                    </div>
+                  )}
+                  {generatedContent.content}
+                </div>
+              )
             )}
           </CardContent>
         </Card>

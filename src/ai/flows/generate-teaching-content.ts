@@ -33,7 +33,15 @@ export type GenerateTeachingContentInput = z.infer<
 >;
 
 const GenerateTeachingContentOutputSchema = z.object({
-  content: z.string().describe('The generated teaching content.'),
+  content: z
+    .string()
+    .describe(
+      'The generated teaching content. For a visual aid, this is the description.'
+    ),
+  imageUrl: z
+    .string()
+    .optional()
+    .describe('The data URI of the generated image for a visual aid.'),
 });
 
 export type GenerateTeachingContentOutput = z.infer<
@@ -46,20 +54,33 @@ export async function generateTeachingContent(
   return generateTeachingContentFlow(input);
 }
 
-const generateTeachingContentPrompt = ai.definePrompt({
-  name: 'generateTeachingContentPrompt',
+const generateContentPrompt = ai.definePrompt({
+  name: 'generateContentPrompt',
   input: {schema: GenerateTeachingContentInputSchema},
-  output: {schema: GenerateTeachingContentOutputSchema},
+  output: {schema: z.object({content: z.string()})},
   prompt: `You are an expert teacher specializing in creating localized teaching content.
 
-You will use the information provided to generate teaching content in the specified language, for the specified grade level, and in the specified format.
+  You will use the information provided to generate teaching content in the specified language, for the specified grade level, and in the specified format.
 
-Language: {{{language}}}
-Grade Level: {{{gradeLevel}}}
-Format: {{{format}}}
-Topic: {{{topic}}}
+  Language: {{{language}}}
+  Grade Level: {{{gradeLevel}}}
+  Format: {{{format}}}
+  Topic: {{{topic}}}
 
-Content:`, // Ensure 'Content:' is present to guide the LLM to provide the actual content.
+  Content:`,
+});
+
+const generateVisualAidDescriptionPrompt = ai.definePrompt({
+  name: 'generateVisualAidDescriptionPrompt',
+  input: {schema: GenerateTeachingContentInputSchema},
+  output: {schema: z.object({content: z.string()})},
+  prompt: `You are an expert teacher specializing in creating localized teaching content. Your task is to generate a detailed, descriptive text that can be used as a prompt for an image generation model. This image will be a visual aid for the given topic, language and grade level. The description should be vivid and clear so an AI can draw it accurately. Make the description safe for work and children friendly.
+
+  Language: {{{language}}}
+  Grade Level: {{{gradeLevel}}}
+  Topic: {{{topic}}}
+
+  Image Description:`,
 });
 
 const generateTeachingContentFlow = ai.defineFlow(
@@ -69,7 +90,33 @@ const generateTeachingContentFlow = ai.defineFlow(
     outputSchema: GenerateTeachingContentOutputSchema,
   },
   async input => {
-    const {output} = await generateTeachingContentPrompt(input);
-    return output!;
+    if (input.format === 'visual aid') {
+      const {output: descriptionOutput} =
+        await generateVisualAidDescriptionPrompt(input);
+      if (!descriptionOutput) {
+        throw new Error('Failed to generate image description.');
+      }
+
+      const {media} = await ai.generate({
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        prompt: descriptionOutput.content,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      });
+
+      return {
+        content: `This visual aid illustrates: ${descriptionOutput.content}`,
+        imageUrl: media?.url,
+      };
+    } else {
+      const {output} = await generateContentPrompt(input);
+      if (!output) {
+        throw new Error('Failed to generate content.');
+      }
+      return {
+        content: output.content,
+      };
+    }
   }
 );
