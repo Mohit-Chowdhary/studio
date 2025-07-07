@@ -229,15 +229,21 @@ export default function ContentGenerator() {
                         {generatedContent.slides.map((slide, index) => (
                           <CarouselItem key={index} className="flex flex-col items-center text-center">
                             <div className="p-1 space-y-4">
-                                <Image
-                                  src={slide.imageUrl}
-                                  alt={`Slide ${index + 1} visual`}
-                                  width={512}
-                                  height={512}
-                                  className="rounded-lg shadow-md aspect-square object-cover mx-auto"
-                                  data-ai-hint="slideshow illustration"
-                                />
-                                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                                {slide.imageUrl ? (
+                                  <Image
+                                    src={slide.imageUrl}
+                                    alt={`Slide ${index + 1} visual`}
+                                    width={512}
+                                    height={512}
+                                    className="rounded-lg shadow-md aspect-square object-cover mx-auto"
+                                    data-ai-hint="slideshow illustration"
+                                  />
+                                ) : (
+                                  <div className="w-full max-w-[512px] aspect-square bg-muted rounded-lg flex items-center justify-center p-4">
+                                    <p className="text-muted-foreground text-center">Image could not be generated for this slide.</p>
+                                  </div>
+                                )}
+                                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap pt-4">
                                   <p>{slide.text}</p>
                                 </div>
                             </div>

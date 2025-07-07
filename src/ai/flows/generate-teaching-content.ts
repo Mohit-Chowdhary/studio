@@ -129,24 +129,38 @@ const generateTeachingContentFlow = ai.defineFlow(
       }
 
       const slidePromises = slideshowContent.slides.map(async slide => {
-        const {media} = await ai.generate({
-          model: 'googleai/gemini-2.0-flash-preview-image-generation',
-          prompt: slide.imagePrompt,
-          config: {
-            responseModalities: ['TEXT', 'IMAGE'],
-          },
-        });
+        if (!slide.imagePrompt?.trim()) {
+          return {
+            text: slide.text,
+            imageUrl: '',
+          };
+        }
+        try {
+          const {media} = await ai.generate({
+            model: 'googleai/gemini-2.0-flash-preview-image-generation',
+            prompt: slide.imagePrompt,
+            config: {
+              responseModalities: ['TEXT', 'IMAGE'],
+            },
+          });
 
-        return {
-          text: slide.text,
-          imageUrl: media?.url || '',
-        };
+          return {
+            text: slide.text,
+            imageUrl: media?.url || '',
+          };
+        } catch (e) {
+          console.error(`Error generating image for slide: ${slide.text}`, e);
+          return {
+            text: slide.text,
+            imageUrl: '',
+          };
+        }
       });
 
       const slides = await Promise.all(slidePromises);
 
       return {
-        slides: slides.filter(slide => slide.imageUrl),
+        slides,
       };
     } else {
       const {output} = await generateContentPrompt(input);
