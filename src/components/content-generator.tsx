@@ -34,6 +34,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { generateContentAction } from "@/app/actions";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const formSchema = z.object({
   topic: z.string().min(3, "Topic must be at least 3 characters long."),
@@ -43,15 +50,20 @@ const formSchema = z.object({
     .min(1, "Grade level must be between 1 and 12.")
     .max(12, "Grade level must be between 1 and 12."),
   format: z.enum([ 'story', 'worksheet', 'quiz', 'explanation', 'visual aid' ], {
-    required_error: "You need to select a content format.",
+    required_error: "You new-branch-orphaned-by-07fe53c4ed891d1d86d5e18f26d6a59b9a4cb348ed to select a content format.",
   }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
+interface GeneratedSlide {
+  text: string;
+  imageUrl: string;
+}
+
 interface GeneratedContent {
-  content: string;
-  imageUrl?: string;
+  content?: string;
+  slides?: GeneratedSlide[];
 }
 
 export default function ContentGenerator() {
@@ -201,28 +213,46 @@ export default function ContentGenerator() {
           <CardContent>
             {isLoading ? (
               <div className="space-y-4">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="w-full h-64 rounded-lg" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
               </div>
             ) : (
               generatedContent && (
-                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                  {generatedContent.imageUrl && (
-                    <div className="my-4 flex justify-center">
-                      <Image
-                        src={generatedContent.imageUrl}
-                        alt="Generated visual aid"
-                        width={512}
-                        height={512}
-                        className="rounded-lg shadow-md"
-                        data-ai-hint="illustration drawing"
-                      />
+                <>
+                  {generatedContent.slides && generatedContent.slides.length > 0 ? (
+                    <Carousel className="w-full max-w-xl mx-auto">
+                      <CarouselContent>
+                        {generatedContent.slides.map((slide, index) => (
+                          <CarouselItem key={index} className="flex flex-col items-center text-center">
+                            <div className="p-1 space-y-4">
+                                <Image
+                                  src={slide.imageUrl}
+                                  alt={`Slide ${index + 1} visual`}
+                                  width={512}
+                                  height={512}
+                                  className="rounded-lg shadow-md aspect-square object-cover mx-auto"
+                                  data-ai-hint="slideshow illustration"
+                                />
+                                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                                  <p>{slide.text}</p>
+                                </div>
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
+                  ) : (
+                    <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
+                      {generatedContent.content}
                     </div>
                   )}
-                  {generatedContent.content}
-                </div>
+                </>
               )
             )}
           </CardContent>

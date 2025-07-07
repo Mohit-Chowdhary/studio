@@ -32,16 +32,26 @@ export type GenerateTeachingContentInput = z.infer<
   typeof GenerateTeachingContentInputSchema
 >;
 
-const GenerateTeachingContentOutputSchema = z.object({
-  content: z
+const SlideSchema = z.object({
+  text: z
     .string()
     .describe(
-      'The generated teaching content. For a visual aid, this is the description.'
+      'The text for this slide. It should be concise and easy to read on a presentation slide.'
     ),
   imageUrl: z
     .string()
+    .describe('The data URI of the generated image for this slide.'),
+});
+
+const GenerateTeachingContentOutputSchema = z.object({
+  content: z
+    .string()
     .optional()
-    .describe('The data URI of the generated image for a visual aid.'),
+    .describe('The generated teaching content for non-slideshow formats.'),
+  slides: z
+    .array(SlideSchema)
+    .optional()
+    .describe('An array of slides for the visual aid.'),
 });
 
 export type GenerateTeachingContentOutput = z.infer<
@@ -70,17 +80,39 @@ const generateContentPrompt = ai.definePrompt({
   Content:`,
 });
 
-const generateVisualAidDescriptionPrompt = ai.definePrompt({
-  name: 'generateVisualAidDescriptionPrompt',
+const generateSlideshowPrompt = ai.definePrompt({
+  name: 'generateSlideshowPrompt',
   input: {schema: GenerateTeachingContentInputSchema},
-  output: {schema: z.object({content: z.string()})},
-  prompt: `You are an expert teacher specializing in creating localized teaching content. Your task is to generate a detailed, descriptive text that can be used as a prompt for an image generation model. This image will be a visual aid for the given topic, language and grade level. The description should be vivid and clear so an AI can draw it accurately. Make the description safe for work and children friendly.
+  output: {
+    schema: z.object({
+      slides: z
+        .array(
+          z.object({
+            text: z
+              .string()
+              .describe(
+                'The text for this slide. It should be concise and easy to read on a presentation slide.'
+              ),
+            imagePrompt: z
+              .string()
+              .describe(
+                'A detailed prompt for an image generation model to create a visual for this slide. The prompt should be descriptive and safe for work.'
+              ),
+          })
+        )
+        .describe('An array of 3 to 5 slides that break down the topic.'),
+    }),
+  },
+  prompt: `You are an expert teacher creating a slideshow presentation. Your task is to break down the given topic into a series of 3 to 5 slides for the specified grade level and language.
+
+  For each slide, provide:
+  1.  Concise text content that explains a part of the topic.
+  2.  A detailed prompt for an AI image generator to create a relevant visual aid.
 
   Language: {{{language}}}
   Grade Level: {{{gradeLevel}}}
   Topic: {{{topic}}}
-
-  Image Description:`,
+  `,
 });
 
 const generateTeachingContentFlow = ai.defineFlow(
@@ -91,23 +123,30 @@ const generateTeachingContentFlow = ai.defineFlow(
   },
   async input => {
     if (input.format === 'visual aid') {
-      const {output: descriptionOutput} =
-        await generateVisualAidDescriptionPrompt(input);
-      if (!descriptionOutput) {
-        throw new Error('Failed to generate image description.');
+      const {output: slideshowContent} = await generateSlideshowPrompt(input);
+      if (!slideshowContent || !slideshowContent.slides) {
+        throw new Error('Failed to generate slideshow content.');
       }
 
-      const {media} = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: descriptionOutput.content,
-        config: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
+      const slidePromises = slideshowContent.slides.map(async slide => {
+        const {media} = await ai.generate({
+          model: 'googleai/gemini-2.0-flash-preview-image-generation',
+          prompt: slide.imagePrompt,
+          config: {
+            responseModalities: ['TEXT', 'IMAGE'],
+          },
+        });
+
+        return {
+          text: slide.text,
+          imageUrl: media?.url || '',
+        };
       });
 
+      const slides = await Promise.all(slidePromises);
+
       return {
-        content: `This visual aid illustrates: ${descriptionOutput.content}`,
-        imageUrl: media?.url,
+        slides: slides.filter(slide => slide.imageUrl),
       };
     } else {
       const {output} = await generateContentPrompt(input);
