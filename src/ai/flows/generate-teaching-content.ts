@@ -1,3 +1,4 @@
+
 // This file is machine-generated - edit at your own risk!
 
 'use server';
@@ -43,6 +44,17 @@ const SlideSchema = z.object({
     .describe('The data URI of the generated image for this slide.'),
 });
 
+const QuizQuestionSchema = z.object({
+  questionText: z.string().describe('The text of the quiz question.'),
+  options: z.array(z.string()).min(4).max(4).describe('An array of 4 possible answers.'),
+  correctAnswer: z.string().describe('The correct answer from the options array.'),
+});
+
+const QuizSchema = z.object({
+  questions: z.array(QuizQuestionSchema).min(3).max(5).describe('An array of 3-5 quiz questions.'),
+});
+
+
 const GenerateTeachingContentOutputSchema = z.object({
   content: z
     .string()
@@ -52,6 +64,7 @@ const GenerateTeachingContentOutputSchema = z.object({
     .array(SlideSchema)
     .optional()
     .describe('An array of slides for the visual aid.'),
+  quiz: QuizSchema.optional().describe("The generated interactive quiz data."),
 });
 
 export type GenerateTeachingContentOutput = z.infer<
@@ -115,6 +128,23 @@ const generateSlideshowPrompt = ai.definePrompt({
   `,
 });
 
+const generateQuizPrompt = ai.definePrompt({
+  name: 'generateQuizPrompt',
+  input: {schema: GenerateTeachingContentInputSchema},
+  output: {schema: QuizSchema},
+  prompt: `You are an expert teacher creating an interactive quiz. Your task is to generate a series of 3-5 multiple-choice questions on the given topic, suitable for the specified grade level and language.
+
+  For each question, provide:
+  1. The question text.
+  2. Exactly four possible answer options.
+  3. The correct answer, which must be one of the four options.
+
+  Language: {{{language}}}
+  Grade Level: {{{gradeLevel}}}
+  Topic: {{{topic}}}
+  `,
+});
+
 const generateTeachingContentFlow = ai.defineFlow(
   {
     name: 'generateTeachingContentFlow',
@@ -162,7 +192,14 @@ const generateTeachingContentFlow = ai.defineFlow(
       return {
         slides,
       };
-    } else {
+    } else if (input.format === 'quiz') {
+      const {output} = await generateQuizPrompt(input);
+      if (!output || !output.questions) {
+        throw new Error('Failed to generate quiz content.');
+      }
+      return { quiz: output };
+    }
+    else {
       const {output} = await generateContentPrompt(input);
       if (!output) {
         throw new Error('Failed to generate content.');

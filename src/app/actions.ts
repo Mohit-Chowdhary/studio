@@ -11,7 +11,7 @@ export async function generateContentAction(
 ): Promise<GenerateTeachingContentOutput | { error: string }> {
   try {
     const result = await generateTeachingContent(input);
-    if (!result || (!result.content && (!result.slides || result.slides.length === 0))) {
+    if (!result || (!result.content && (!result.slides || result.slides.length === 0) && !result.quiz)) {
       throw new Error('Failed to generate content. The AI model returned an empty response.');
     }
     return result;

@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Wand2 } from "lucide-react";
+import { Loader2, Wand2, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -41,6 +43,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   topic: z.string().min(3, "Topic must be at least 3 characters long."),
@@ -50,7 +56,7 @@ const formSchema = z.object({
     .min(1, "Grade level must be between 1 and 12.")
     .max(12, "Grade level must be between 1 and 12."),
   format: z.enum([ 'story', 'worksheet', 'quiz', 'explanation', 'visual aid' ], {
-    required_error: "You new-branch-orphaned-by-07fe53c4ed891d1d86d5e18f26d6a59b9a4cb348ed to select a content format.",
+    required_error: "You need to select a content format.",
   }),
 });
 
@@ -61,10 +67,143 @@ interface GeneratedSlide {
   imageUrl: string;
 }
 
+interface QuizQuestion {
+  questionText: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+interface GeneratedQuiz {
+  questions: QuizQuestion[];
+}
+
 interface GeneratedContent {
   content?: string;
   slides?: GeneratedSlide[];
+  quiz?: GeneratedQuiz;
 }
+
+function InteractiveQuiz({ quiz, topic }: { quiz: GeneratedQuiz, topic: string }) {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [score, setScore] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const [isFinished, setIsFinished] = useState(false);
+
+  const currentQuestion = quiz.questions[currentQuestionIndex];
+
+  const handleNext = () => {
+    if (showResult && selectedAnswer === currentQuestion.correctAnswer) {
+      setScore(prevScore => prevScore + 1);
+    }
+    
+    setShowResult(false);
+    setSelectedAnswer(null);
+
+    if (currentQuestionIndex < quiz.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      setIsFinished(true);
+    }
+  };
+  
+  const handleCheckAnswer = () => {
+    if (!selectedAnswer) return;
+    setShowResult(true);
+  };
+
+  const handleRestart = () => {
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setScore(0);
+    setShowResult(false);
+    setIsFinished(false);
+  };
+
+  if (isFinished) {
+    return (
+      <Card className="text-center p-6 shadow-md w-full">
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">Quiz Complete!</CardTitle>
+          <CardDescription>You've finished the quiz on "{topic}"</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-4xl font-bold text-primary">
+            {score} / {quiz.questions.length}
+          </p>
+          <p className="text-lg text-foreground/80">Great job!</p>
+          <Button onClick={handleRestart} size="lg">
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Restart Quiz
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+
+  return (
+    <div className="space-y-6 w-full">
+      <div className="flex items-center gap-4">
+        <p className="text-sm font-medium text-foreground/80">Question {currentQuestionIndex + 1} of {quiz.questions.length}</p>
+        <Progress value={((currentQuestionIndex + 1) / quiz.questions.length) * 100} className="w-full h-2" />
+      </div>
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle className="font-headline">Quiz: {topic}</CardTitle>
+          <CardDescription className="pt-4 text-lg text-foreground font-medium">{currentQuestion.questionText}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup
+            value={selectedAnswer ?? ""}
+            onValueChange={setSelectedAnswer}
+            disabled={showResult}
+            className="space-y-4"
+          >
+            {currentQuestion.options.map((option, index) => {
+              const isSelected = selectedAnswer === option;
+              const isCorrectOption = currentQuestion.correctAnswer === option;
+              let itemClass = "";
+              if (showResult && isSelected) {
+                itemClass = isCorrect ? "bg-green-100 dark:bg-green-900/30 border-green-500" : "bg-red-100 dark:bg-red-900/30 border-red-500";
+              } else if (showResult && isCorrectOption) {
+                 itemClass = "bg-green-100 dark:bg-green-900/30 border-green-500";
+              }
+
+              return (
+                <Label
+                  key={index}
+                  htmlFor={`option-${index}`}
+                  className={cn(
+                    "flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-colors hover:bg-muted/50",
+                    itemClass,
+                    showResult && "cursor-not-allowed"
+                  )}
+                >
+                  <RadioGroupItem value={option} id={`option-${index}`} />
+                  <span className="flex-1">{option}</span>
+                  {showResult && isCorrectOption && <CheckCircle className="ml-auto text-green-600" />}
+                  {showResult && isSelected && !isCorrect && <XCircle className="ml-auto text-red-600" />}
+                </Label>
+              );
+            })}
+          </RadioGroup>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+            {!showResult ? (
+                 <Button onClick={handleCheckAnswer} disabled={!selectedAnswer}>Check Answer</Button>
+            ) : (
+                <Button onClick={handleNext}>
+                  {currentQuestionIndex === quiz.questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+                </Button>
+            )}
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
 
 export default function ContentGenerator() {
   const [isLoading, setIsLoading] = useState(false);
@@ -210,9 +349,9 @@ export default function ContentGenerator() {
               Here is the AI-generated material based on your selections.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex justify-center">
             {isLoading ? (
-              <div className="space-y-4">
+              <div className="space-y-4 w-full">
                 <Skeleton className="w-full h-64 rounded-lg" />
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-3/4" />
@@ -223,7 +362,9 @@ export default function ContentGenerator() {
             ) : (
               generatedContent && (
                 <>
-                  {generatedContent.slides && generatedContent.slides.length > 0 ? (
+                  {generatedContent.quiz ? (
+                    <InteractiveQuiz quiz={generatedContent.quiz} topic={form.getValues('topic')} />
+                  ) : generatedContent.slides && generatedContent.slides.length > 0 ? (
                     <Carousel className="w-full max-w-xl mx-auto">
                       <CarouselContent>
                         {generatedContent.slides.map((slide, index) => (
