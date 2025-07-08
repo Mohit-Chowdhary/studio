@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -10,7 +9,7 @@ import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpC
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +19,7 @@ import type { GradeDrawingOutput } from "@/ai/flows/grade-drawing";
 import { InteractiveQuiz } from "./interactive-quiz";
 import { SlideshowCarousel } from "./slideshow-carousel";
 import { Sketchpad } from "./sketch-pad";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   prompt: z.string().min(10, "Please describe your lesson plan requirements in at least 10 characters."),
@@ -251,16 +251,14 @@ export default function LessonPlanner() {
   };
 
   return (
-    <div className="space-y-8">
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline">Lesson Planner</CardTitle>
-          <CardDescription>
+    <div className="space-y-12">
+      <div>
+        <h2 className="text-3xl font-bold font-headline tracking-tight">AI Lesson Planner</h2>
+        <p className="text-muted-foreground mt-1">
             Describe your teaching needs, and I'll create a full lesson plan with all the materials.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
+        </p>
+        <div className="mt-6">
+            <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
@@ -274,7 +272,7 @@ export default function LessonPlanner() {
                           placeholder="e.g., I'll be teaching plants to Class 3 and Class 5 next week in Hindi. Make a plan with stories, quizzes, and visual aids."
                           rows={4}
                           {...field}
-                          className="pr-12"
+                          className="pr-12 text-base"
                         />
                       </FormControl>
                       <Button
@@ -311,51 +309,50 @@ export default function LessonPlanner() {
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
       {(isLoading || lessonPlan) && (
-        <div className="mt-12 animate-in fade-in slide-in-from-bottom-5 duration-500 ease-out">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="font-headline">Generated Lesson Plan</CardTitle>
-              <CardDescription>
-                Here is the AI-generated lesson plan based on your request.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {isLoading ? (
-                <div className="space-y-4 w-full">
-                  <Skeleton className="w-1/2 h-8 rounded-lg" />
-                  <Skeleton className="w-full h-24 rounded-lg" />
-                  <Skeleton className="w-full h-24 rounded-lg" />
+        <div className="animate-in fade-in slide-in-from-bottom-5 duration-500 ease-out">
+            <Separator className="my-8" />
+            <div>
+                 <h2 className="text-3xl font-bold font-headline tracking-tight">Generated Lesson Plan</h2>
+                <p className="text-muted-foreground mt-1">
+                    Here is the AI-generated lesson plan based on your request.
+                </p>
+                <div className="mt-6 space-y-8">
+                    {isLoading ? (
+                        <div className="space-y-4 w-full">
+                        <Skeleton className="w-1/2 h-8 rounded-lg" />
+                        <Skeleton className="w-full h-24 rounded-lg" />
+                        <Skeleton className="w-full h-24 rounded-lg" />
+                        </div>
+                    ) : (
+                        lessonPlan?.plans.map((plan, planIndex) => (
+                        <div key={planIndex} className="space-y-4 rounded-xl border bg-card text-card-foreground shadow-sm p-6">
+                            <h3 className="text-2xl font-bold font-headline text-primary">
+                                Plan for {plan.gradeLevel}: {plan.topic}
+                            </h3>
+                            <Accordion type="single" collapsible className="w-full" defaultValue={plan.activities[0]?.title}>
+                            {plan.activities.map((activity, activityIndex) => (
+                                <AccordionItem value={activity.title} key={activityIndex} className="border-b-0">
+                                <AccordionTrigger className="text-lg font-medium hover:no-underline rounded-md px-4 py-3 -mx-4 hover:bg-muted/50 data-[state=open]:bg-muted/50">
+                                    <div className="flex items-center gap-3">
+                                        {formatToIcon(activity.format)}
+                                        <span>{activity.title} <span className="text-sm font-normal text-muted-foreground">({activity.format})</span></span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-4 bg-transparent">
+                                    <ActivityContent activity={activity} />
+                                </AccordionContent>
+                                </AccordionItem>
+                            ))}
+                            </Accordion>
+                        </div>
+                        ))
+                    )}
                 </div>
-              ) : (
-                lessonPlan?.plans.map((plan, planIndex) => (
-                  <div key={planIndex} className="space-y-4 rounded-lg border p-4 bg-muted/30">
-                     <h2 className="text-2xl font-bold font-headline text-primary">
-                          Plan for {plan.gradeLevel}: {plan.topic}
-                      </h2>
-                    <Accordion type="single" collapsible className="w-full" defaultValue={plan.activities[0]?.title}>
-                      {plan.activities.map((activity, activityIndex) => (
-                        <AccordionItem value={activity.title} key={activityIndex}>
-                          <AccordionTrigger className="text-lg font-medium hover:no-underline rounded-md px-4 hover:bg-muted/50">
-                              <div className="flex items-center gap-3">
-                                  {formatToIcon(activity.format)}
-                                  <span>{activity.title} <span className="text-sm font-normal text-muted-foreground">({activity.format})</span></span>
-                              </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="p-4 bg-muted/20 rounded-b-md">
-                            <ActivityContent activity={activity} />
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+            </div>
         </div>
       )}
     </div>
