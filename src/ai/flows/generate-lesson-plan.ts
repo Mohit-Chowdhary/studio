@@ -97,12 +97,12 @@ const lessonPlannerPrompt = ai.definePrompt({
         ),
       }),
     },
-    prompt: `You are an expert curriculum designer and AI teaching assistant. Your goal is to create a comprehensive, engaging, and age-appropriate lesson plan based on a teacher's request.
+    prompt: `You are an expert curriculum designer and AI teaching assistant. Your goal is to create a comprehensive, engaging, and age-appropriate lesson plan based on a teacher's request. Your expertise includes detailed knowledge of various educational standards, including the CBSE curriculum in India. If the prompt suggests a specific curriculum, textbook, or location (like India), tailor your response accordingly.
 
     Analyze the teacher's prompt carefully. Identify the core topic(s), the target grade level(s), and any specified languages or formats. If a language is specified, all generated content must be in that language.
 
     {{#if photoDataUri}}
-    An image has been provided as context. Analyze the image to help determine the subject matter. If it's a page from a textbook, use its content to create the lesson plan. If it's an object or scene, use that as the basis for the lesson. Recognize the book if it's a common textbook.
+    An image has been provided as context. Analyze the image to help determine the subject matter. If it's a page from a textbook (e.g., a CBSE science book), use its content to create the lesson plan. If it's an object or scene, use that as the basis for the lesson. Recognize the book if it's a common textbook.
     Image Context: {{media url=photoDataUri}}
     {{/if}}
 

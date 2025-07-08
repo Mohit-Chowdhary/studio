@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +9,65 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useSettings, type AppSettings } from '@/hooks/use-settings';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const subjectsList = [
+  { id: 'science', label: 'Science' },
+  { id: 'math', label: 'Mathematics' },
+  { id: 'history', label: 'History & Social Studies' },
+  { id: 'art', label: 'Arts & Music' },
+  { id: 'language', label: 'Language Arts' },
+];
 
 export default function SettingsPage() {
+  const { settings, saveSettings, isLoaded } = useSettings();
+  const { toast } = useToast();
+  const [currentSettings, setCurrentSettings] = useState<AppSettings>({ gradeLevel: '', subjects: [], language: '' });
+
+  useEffect(() => {
+    if (isLoaded) {
+      setCurrentSettings(settings);
+    }
+  }, [isLoaded, settings]);
+
+  const handleSubjectChange = (subjectId: string, checked: boolean) => {
+    setCurrentSettings(prev => {
+      const newSubjects = checked
+        ? [...prev.subjects, subjectId]
+        : prev.subjects.filter(s => s !== subjectId);
+      return { ...prev, subjects: newSubjects };
+    });
+  };
+
+  const handleSave = () => {
+    saveSettings(currentSettings);
+    toast({
+      title: 'Preferences Saved',
+      description: 'Your default settings have been updated.',
+    });
+  };
+  
+  if (!isLoaded) {
+    return (
+       <AppLayout title="Settings">
+         <Card>
+           <CardHeader>
+             <Skeleton className="h-8 w-1/4" />
+             <Skeleton className="h-4 w-1/2" />
+           </CardHeader>
+           <CardContent className="space-y-6">
+             <div className="space-y-2"><Skeleton className="h-4 w-1/6" /><Skeleton className="h-10 w-full max-w-sm" /></div>
+             <div className="space-y-2"><Skeleton className="h-4 w-1/6" /><Skeleton className="h-10 w-full max-w-md" /></div>
+             <div className="space-y-2"><Skeleton className="h-4 w-1/6" /><Skeleton className="h-10 w-full max-w-sm" /></div>
+             <div><Skeleton className="h-10 w-28" /></div>
+           </CardContent>
+         </Card>
+       </AppLayout>
+    );
+  }
+
   return (
     <AppLayout title="Settings">
       <div className="space-y-8">
@@ -21,11 +79,15 @@ export default function SettingsPage() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="grade-level">Default Grade Level</Label>
-              <Select>
+              <Select
+                value={currentSettings.gradeLevel}
+                onValueChange={(value) => setCurrentSettings(prev => ({ ...prev, gradeLevel: value }))}
+              >
                 <SelectTrigger id="grade-level" className="w-full max-w-sm">
                   <SelectValue placeholder="Select a grade" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="" disabled>Select a grade</SelectItem>
                   <SelectItem value="preschool">Preschool</SelectItem>
                   <SelectItem value="kindergarten">Kindergarten</SelectItem>
                   <SelectItem value="1">Class 1</SelectItem>
@@ -46,44 +108,32 @@ export default function SettingsPage() {
             <div className="space-y-2">
                 <Label>Preferred Subjects</Label>
                 <div className="flex flex-wrap gap-x-6 gap-y-4 pt-2">
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="science" />
-                        <label htmlFor="science" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Science
-                        </label>
+                  {subjectsList.map(subject => (
+                    <div key={subject.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={subject.id}
+                        checked={currentSettings.subjects.includes(subject.id)}
+                        onCheckedChange={(checked) => handleSubjectChange(subject.id, !!checked)}
+                      />
+                      <label htmlFor={subject.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          {subject.label}
+                      </label>
                     </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="math" />
-                        <label htmlFor="math" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Mathematics
-                        </label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="history" />
-                        <label htmlFor="history" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            History & Social Studies
-                        </label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="art" />
-                        <label htmlFor="art" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Arts & Music
-                        </label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="language" />
-                        <label htmlFor="language" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            Language Arts
-                        </label>
-                    </div>
+                  ))}
                 </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="language-input">Default Language</Label>
-              <Input id="language-input" placeholder="e.g., English, Hindi" className="w-full max-w-sm" />
+              <Input
+                id="language-input"
+                placeholder="e.g., English, Hindi"
+                className="w-full max-w-sm"
+                value={currentSettings.language}
+                onChange={(e) => setCurrentSettings(prev => ({ ...prev, language: e.target.value }))}
+              />
             </div>
             <div>
-                 <Button disabled>Save Preferences</Button>
+                 <Button onClick={handleSave}>Save Preferences</Button>
             </div>
           </CardContent>
         </Card>
