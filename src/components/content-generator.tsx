@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Wand2, CheckCircle, XCircle, RotateCcw } from "lucide-react";
+import { Loader2, Wand2, CheckCircle, XCircle, RotateCcw, Volume2 } from "lucide-react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { generateContentAction } from "@/app/actions";
+import { generateContentAction, textToSpeechAction } from "@/app/actions";
 import {
   Carousel,
   CarouselContent,
@@ -208,6 +208,8 @@ function InteractiveQuiz({ quiz, topic }: { quiz: GeneratedQuiz, topic: string }
 export default function ContentGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [audioData, setAudioData] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -222,6 +224,7 @@ export default function ContentGenerator() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setGeneratedContent(null);
+    setAudioData(null);
     
     const result = await generateContentAction(values);
 
@@ -237,6 +240,27 @@ export default function ContentGenerator() {
 
     setIsLoading(false);
   };
+  
+  const handleTextToSpeech = async () => {
+    if (!generatedContent?.content) return;
+    setIsAudioLoading(true);
+    setAudioData(null);
+
+    const result = await textToSpeechAction(generatedContent.content);
+
+    if ("error" in result) {
+      toast({
+        variant: "destructive",
+        title: "Error Generating Audio",
+        description: result.error,
+      });
+    } else {
+      setAudioData(result.media);
+    }
+
+    setIsAudioLoading(false);
+  };
+
 
   return (
     <div className="space-y-8">
@@ -394,11 +418,33 @@ export default function ContentGenerator() {
                       <CarouselPrevious />
                       <CarouselNext />
                     </Carousel>
-                  ) : (
-                    <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-                      {generatedContent.content}
+                  ) : generatedContent.content ? (
+                    <div className="w-full space-y-4">
+                      <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap rounded-md border bg-muted/20 p-4">
+                        {generatedContent.content}
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Button
+                          onClick={handleTextToSpeech}
+                          disabled={isAudioLoading || !generatedContent.content}
+                          variant="outline"
+                          size="sm"
+                        >
+                          {isAudioLoading ? (
+                            <Loader2 className="mr-2" />
+                          ) : (
+                            <Volume2 className="mr-2" />
+                          )}
+                          Read Aloud
+                        </Button>
+                        {audioData && (
+                          <audio controls src={audioData} className="w-full max-w-md">
+                            Your browser does not support the audio element.
+                          </audio>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ) : null}
                 </>
               )
             )}
