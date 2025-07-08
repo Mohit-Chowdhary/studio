@@ -1,0 +1,298 @@
+
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { generateLessonPlanAction, textToSpeechAction } from "@/app/actions";
+import type { GenerateLessonPlanOutput } from "@/ai/flows/generate-lesson-plan";
+import { InteractiveQuiz } from "./interactive-quiz";
+import { SlideshowCarousel } from "./slideshow-carousel";
+
+const formSchema = z.object({
+  prompt: z.string().min(10, "Please describe your lesson plan requirements in at least 10 characters."),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+const ActivityContent = ({ activity }: { activity: GenerateLessonPlanOutput['plans'][0]['activities'][0] }) => {
+    const [isAudioLoading, setIsAudioLoading] = useState(false);
+    const [audioSrc, setAudioSrc] = useState<string | null>(null);
+    const [audioKey, setAudioKey] = useState(0);
+    const { toast } = useToast();
+
+    const textContent = activity.content;
+
+    const handleTextToSpeech = async () => {
+        if (!textContent) return;
+        setIsAudioLoading(true);
+        setAudioSrc(null);
+
+        const result = await textToSpeechAction(textContent);
+
+        if ("error" in result) {
+            toast({
+                variant: "destructive",
+                title: "Error Generating Audio",
+                description: result.error,
+            });
+        } else {
+            setAudioSrc(result.media);
+            setAudioKey(key => key + 1);
+        }
+        setIsAudioLoading(false);
+    };
+
+    if (activity.quiz) {
+        return <InteractiveQuiz quiz={activity.quiz} topic={activity.title} />;
+    }
+
+    if (activity.slides) {
+        return <SlideshowCarousel slides={activity.slides} />;
+    }
+
+    if (textContent) {
+        return (
+            <div className="w-full space-y-4">
+                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap rounded-md border bg-muted/20 p-4">
+                    {textContent}
+                </div>
+                <div className="flex items-center gap-4">
+                    <Button
+                      onClick={handleTextToSpeech}
+                      disabled={isAudioLoading || !textContent}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {isAudioLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Volume2 className="mr-2 h-4 w-4" />
+                      )}
+                      Read Aloud
+                    </Button>
+                    {audioSrc && (
+                      <audio key={audioKey} controls autoPlay src={audioSrc} className="w-full max-w-md">
+                        Your browser does not support the audio element.
+                      </audio>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return <p className="text-muted-foreground">No content generated for this activity.</p>;
+};
+
+const formatToIcon = (format: string) => {
+    switch (format) {
+        case 'story': return <BookOpen className="w-4 h-4 text-primary" />;
+        case 'worksheet': return <FileText className="w-4 h-4 text-primary" />;
+        case 'quiz': return <HelpCircle className="w-4 h-4 text-primary" />;
+        case 'explanation': return <Beaker className="w-4 h-4 text-primary" />;
+        case 'visual aid': return <Beaker className="w-4 h-4 text-primary" />;
+        default: return <FileText className="w-4 h-4 text-primary" />;
+    }
+}
+
+
+export default function LessonPlanner() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [lessonPlan, setLessonPlan] = useState<GenerateLessonPlanOutput | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const { toast } = useToast();
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      prompt: "",
+    },
+  });
+
+   useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      form.setValue('prompt', transcript, { shouldValidate: true });
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      toast({
+        variant: 'destructive',
+        title: 'Speech Error',
+        description: event.error === 'no-speech' ? 'No speech was detected.' : 'An error occurred. Please try again.',
+      });
+    };
+
+    recognition.onend = () => setIsListening(false);
+    speechRecognitionRef.current = recognition;
+  }, [form, toast]);
+
+
+  const handleListen = () => {
+    if (!speechRecognitionRef.current) {
+      toast({
+        variant: 'destructive',
+        title: 'Browser Not Supported',
+        description: 'Speech recognition is not available in your browser.',
+      });
+      return;
+    }
+
+    if (isListening) {
+      speechRecognitionRef.current.stop();
+    } else {
+      setIsListening(true);
+      speechRecognitionRef.current.start();
+    }
+  };
+
+  const onSubmit = async (values: FormValues) => {
+    setIsLoading(true);
+    setLessonPlan(null);
+    
+    const result = await generateLessonPlanAction(values);
+
+    if ("error" in result) {
+      toast({
+        variant: "destructive",
+        title: "Error Generating Lesson Plan",
+        description: result.error,
+      });
+    } else {
+      setLessonPlan(result);
+    }
+
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="space-y-8">
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle className="font-headline">Lesson Planner</CardTitle>
+          <CardDescription>
+            Describe your teaching needs, and I'll create a full lesson plan with all the materials.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="prompt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your Request</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Textarea
+                          placeholder="e.g., I'll be teaching plants to Class 3 and Class 5 next week in Hindi. Make a plan with stories, quizzes, and visual aids."
+                          rows={4}
+                          {...field}
+                          className="pr-12"
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-2 h-8 w-8"
+                        onClick={handleListen}
+                        title={isListening ? "Stop listening" : "Use microphone"}
+                      >
+                        {isListening ? (
+                          <MicOff className="text-red-500" />
+                        ) : (
+                          <Mic />
+                        )}
+                        <span className="sr-only">{isListening ? "Stop listening" : "Use microphone"}</span>
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                size="lg"
+              >
+                {isLoading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Plan...</>
+                ) : (
+                  <><Wand2 className="mr-2 h-4 w-4" /> Generate Plan</>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+      
+      {(isLoading || lessonPlan) && (
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle className="font-headline">Generated Lesson Plan</CardTitle>
+            <CardDescription>
+              Here is the AI-generated lesson plan based on your request.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {isLoading ? (
+              <div className="space-y-4 w-full">
+                <Skeleton className="w-1/2 h-8 rounded-lg" />
+                <Skeleton className="w-full h-24 rounded-lg" />
+                <Skeleton className="w-full h-24 rounded-lg" />
+              </div>
+            ) : (
+              lessonPlan?.plans.map((plan, planIndex) => (
+                <div key={planIndex} className="space-y-4 rounded-lg border p-4">
+                   <h2 className="text-2xl font-bold font-headline text-primary">
+                        Plan for {plan.gradeLevel}: {plan.topic}
+                    </h2>
+                  <Accordion type="single" collapsible className="w-full" defaultValue={plan.activities[0]?.title}>
+                    {plan.activities.map((activity, activityIndex) => (
+                      <AccordionItem value={activity.title} key={activityIndex}>
+                        <AccordionTrigger className="text-lg font-medium hover:no-underline">
+                            <div className="flex items-center gap-3">
+                                {formatToIcon(activity.format)}
+                                <span>{activity.title} <span className="text-sm font-normal text-muted-foreground">({activity.format})</span></span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-4 bg-muted/20 rounded-b-md">
+                          <ActivityContent activity={activity} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

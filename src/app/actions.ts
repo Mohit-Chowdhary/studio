@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -6,6 +7,7 @@ import {
   type GenerateTeachingContentOutput,
 } from '@/ai/flows/generate-teaching-content';
 import { textToSpeech, type TextToSpeechOutput } from '@/ai/flows/text-to-speech';
+import { generateLessonPlan, type GenerateLessonPlanInput, type GenerateLessonPlanOutput } from '@/ai/flows/generate-lesson-plan';
 
 export async function generateContentAction(
   input: GenerateTeachingContentInput
@@ -34,6 +36,22 @@ export async function textToSpeechAction(
     return result;
   } catch (error) {
     console.error('Error generating audio:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
+  }
+}
+
+export async function generateLessonPlanAction(
+  input: GenerateLessonPlanInput
+): Promise<GenerateLessonPlanOutput | { error: string }> {
+  try {
+    const result = await generateLessonPlan(input);
+    if (!result || !result.plans || result.plans.length === 0) {
+      throw new Error('Failed to generate lesson plan. The AI model returned an empty response.');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error generating lesson plan:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
   }
