@@ -209,7 +209,8 @@ export default function ContentGenerator() {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
-  const [audioData, setAudioData] = useState<string | null>(null);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [audioKey, setAudioKey] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
   
@@ -281,7 +282,7 @@ export default function ContentGenerator() {
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setGeneratedContent(null);
-    setAudioData(null);
+    setAudioSrc(null);
     
     const result = await generateContentAction(values);
 
@@ -301,7 +302,7 @@ export default function ContentGenerator() {
   const handleTextToSpeech = async () => {
     if (!generatedContent?.content) return;
     setIsAudioLoading(true);
-    setAudioData(null);
+    setAudioSrc(null);
 
     const result = await textToSpeechAction(generatedContent.content);
 
@@ -312,7 +313,8 @@ export default function ContentGenerator() {
         description: result.error,
       });
     } else {
-      setAudioData(result.media);
+      setAudioSrc(result.media);
+      setAudioKey(key => key + 1);
     }
 
     setIsAudioLoading(false);
@@ -509,14 +511,14 @@ export default function ContentGenerator() {
                           size="sm"
                         >
                           {isAudioLoading ? (
-                            <Loader2 className="mr-2" />
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           ) : (
-                            <Volume2 className="mr-2" />
+                            <Volume2 className="mr-2 h-4 w-4" />
                           )}
                           Read Aloud
                         </Button>
-                        {audioData && (
-                          <audio controls src={audioData} className="w-full max-w-md">
+                        {audioSrc && (
+                          <audio key={audioKey} controls autoPlay src={audioSrc} className="w-full max-w-md">
                             Your browser does not support the audio element.
                           </audio>
                         )}
