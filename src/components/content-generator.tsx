@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Wand2, CheckCircle, XCircle, RotateCcw, Volume2 } from "lucide-react";
+import { Loader2, Wand2, CheckCircle, XCircle, RotateCcw, Volume2, Mic, MicOff } from "lucide-react";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
@@ -210,6 +210,9 @@ export default function ContentGenerator() {
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [audioData, setAudioData] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
+  
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -220,6 +223,60 @@ export default function ContentGenerator() {
       gradeLevel: 1,
     },
   });
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      form.setValue('topic', transcript, { shouldValidate: true });
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      toast({
+        variant: 'destructive',
+        title: 'Speech Error',
+        description: event.error === 'no-speech' ? 'No speech was detected.' : 'An error occurred. Please try again.',
+      });
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    speechRecognitionRef.current = recognition;
+  }, [form, toast]);
+
+
+  const handleListen = () => {
+    if (!speechRecognitionRef.current) {
+      toast({
+        variant: 'destructive',
+        title: 'Browser Not Supported',
+        description: 'Speech recognition is not available in your browser.',
+      });
+      return;
+    }
+
+    if (isListening) {
+      speechRecognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      setIsListening(true);
+      speechRecognitionRef.current.start();
+    }
+  };
+
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
@@ -280,9 +337,30 @@ export default function ContentGenerator() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Topic</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., The Water Cycle" {...field} />
-                    </FormControl>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., The Water Cycle"
+                          {...field}
+                          className="pr-12"
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                        onClick={handleListen}
+                        title={isListening ? "Stop listening" : "Use microphone"}
+                      >
+                        {isListening ? (
+                          <MicOff className="text-red-500" />
+                        ) : (
+                          <Mic />
+                        )}
+                        <span className="sr-only">{isListening ? "Stop listening" : "Use microphone"}</span>
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
