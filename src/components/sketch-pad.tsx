@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Eraser, Check, Loader2 } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 interface SketchpadProps {
   width?: number;
@@ -11,10 +12,19 @@ interface SketchpadProps {
   isSubmitting: boolean;
 }
 
+const COLORS = [
+    { hex: '#FFFFFF', name: 'White' },
+    { hex: '#EF4444', name: 'Red' },
+    { hex: '#FBBF24', name: 'Yellow' },
+    { hex: '#4ADE80', name: 'Green' },
+    { hex: '#60A5FA', name: 'Blue' },
+];
+
 export function Sketchpad({ width = 500, height = 400, onSubmit, isSubmitting }: SketchpadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [currentColor, setCurrentColor] = useState(COLORS[0].hex);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,13 +42,19 @@ export function Sketchpad({ width = 500, height = 400, onSubmit, isSubmitting }:
     
     context.scale(dpr, dpr);
     context.lineCap = 'round';
-    context.strokeStyle = 'white';
     context.lineWidth = 3;
     contextRef.current = context;
 
     clearCanvas();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, height]);
+
+  useEffect(() => {
+      const context = contextRef.current;
+      if (context) {
+          context.strokeStyle = currentColor;
+      }
+  }, [currentColor]);
 
   const getCoords = (event: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -108,19 +124,38 @@ export function Sketchpad({ width = 500, height = 400, onSubmit, isSubmitting }:
         onTouchMove={draw}
         className="border-2 border-primary rounded-lg shadow-lg cursor-crosshair bg-[#2D3748]"
       />
-      <div className="flex space-x-4">
-        <Button variant="outline" onClick={clearCanvas} disabled={isSubmitting}>
-          <Eraser className="mr-2" />
-          Clear
-        </Button>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? (
-            <Loader2 className="mr-2 animate-spin" />
-          ) : (
-            <Check className="mr-2" />
-          )}
-          {isSubmitting ? 'Grading...' : 'Submit Answer'}
-        </Button>
+      <div className="flex w-full items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+            {COLORS.map((color) => (
+                <button
+                    key={color.hex}
+                    type="button"
+                    title={color.name}
+                    onClick={() => setCurrentColor(color.hex)}
+                    className={cn(
+                        "h-8 w-8 rounded-full border-2 transition-transform duration-150",
+                        currentColor === color.hex ? 'border-accent scale-110' : 'border-card'
+                    )}
+                    style={{ backgroundColor: color.hex }}
+                >
+                  <span className="sr-only">Set color to {color.name}</span>
+                </button>
+            ))}
+        </div>
+        <div className="flex space-x-4">
+          <Button variant="outline" onClick={clearCanvas} disabled={isSubmitting}>
+            <Eraser className="mr-2" />
+            Clear
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <Loader2 className="mr-2 animate-spin" />
+            ) : (
+              <Check className="mr-2" />
+            )}
+            {isSubmitting ? 'Grading...' : 'Submit Answer'}
+          </Button>
+        </div>
       </div>
     </div>
   );
