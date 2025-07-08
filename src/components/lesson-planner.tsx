@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation, PenSquare, RotateCcw, ImageIcon, Camera, XCircle } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -90,7 +91,7 @@ const ActivityContent = ({ activity }: { activity: GenerateLessonPlanOutput['pla
     if (activity.format === 'drawing activity') {
         return (
             <div className="w-full space-y-4 flex flex-col items-center">
-                 <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap rounded-md border bg-muted/20 p-4 w-full text-center">
+                 <div className="prose prose-sm max-w-none text-foreground rounded-md border bg-muted/20 p-4 w-full text-center">
                     <p className="font-semibold text-lg">{activity.content}</p>
                 </div>
 
@@ -128,8 +129,8 @@ const ActivityContent = ({ activity }: { activity: GenerateLessonPlanOutput['pla
     if (textContent) {
         return (
             <div className="w-full space-y-4">
-                <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap rounded-md border bg-muted/20 p-4">
-                    {textContent}
+                <div className="prose prose-sm max-w-none text-foreground rounded-md border bg-muted/20 p-4">
+                    <ReactMarkdown>{textContent}</ReactMarkdown>
                 </div>
                 <div className="flex items-center gap-4">
                     <Button

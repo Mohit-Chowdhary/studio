@@ -106,9 +106,9 @@ const lessonPlannerPrompt = ai.definePrompt({
 2.  **Emulate CBSE Standards:** Your content must reflect the depth and structure of the CBSE curriculum. When generating content, think about how the topic is presented in popular CBSE textbooks. Use relevant terminology, examples, and structured exercises that would be familiar to a student in that system.
 
 3.  **Generate Rich, Detailed Content:** Do not provide simple, one-paragraph answers. Each activity should be comprehensive.
-    *   **For 'story':** Write a complete, engaging narrative with a beginning, middle, and end. The story should be at least 300 words and weave in the educational concepts seamlessly.
-    *   **For 'worksheet':** Create a multi-part worksheet. Include different types of questions, such as fill-in-the-blanks, multiple choice, short answer questions, and matching exercises. Make it a complete, ready-to-print resource.
-    *   **For 'explanation':** Provide a thorough explanation. Start with a simple analogy or real-world example suitable for the grade level. Break down the topic into smaller, digestible parts with clear headings. Use bullet points and bold text to highlight key terms.
+    *   **For 'story':** Write a complete, engaging narrative with a beginning, middle, and end. The story should be at least 300 words and weave in the educational concepts seamlessly. Use Markdown for formatting (**bold**, *italics*).
+    *   **For 'worksheet':** Create a multi-part worksheet. Include different types of questions, such as fill-in-the-blanks, multiple choice, short answer questions, and matching exercises. Make it a complete, ready-to-print resource. Use Markdown for formatting.
+    *   **For 'explanation':** Provide a thorough, multi-part explanation broken into 3-5 sections, like a mini-presentation. Each section should have detailed paragraphs of text and a highly descriptive 'imagePrompt' for an accompanying illustration. Use simple analogies, clear headings, and highlight key terms with Markdown (**bold**). The final output for this activity format should be a series of slides in the 'slides' field, not text in the 'content' field.
     *   **For 'drawing activity':** Provide a very specific prompt that encourages detailed scientific or explanatory drawing (e.g., 'Draw a detailed diagram of a plant cell, labeling the nucleus, cell wall, cytoplasm, and chloroplasts.'). The output should be in the 'content' field.
     *   **For 'quiz':** Generate a challenging 3-5 question multiple-choice quiz. The questions should test understanding, not just recall. Include plausible distractors for the incorrect options.
     *   **For 'visual aid':** Generate a series of 3-5 slides. Each slide must have concise, informative text and a highly detailed, descriptive 'imagePrompt' for an AI image generator to create a vivid and accurate illustration.
@@ -140,12 +140,12 @@ const generateLessonPlanFlow = ai.defineFlow(
       throw new Error('Failed to generate a lesson plan structure.');
     }
 
-    // Step 2: Process the plan to generate images for visual aids.
+    // Step 2: Process the plan to generate images for visual aids and explanations.
     const processedPlans = await Promise.all(
         planOutput.plans.map(async (plan) => {
             const processedActivities = await Promise.all(
                 plan.activities.map(async (activity) => {
-                    if (activity.format === 'visual aid' && activity.slides) {
+                    if ((activity.format === 'visual aid' || activity.format === 'explanation') && activity.slides) {
                         const slidePromises = activity.slides.map(async (slide) => {
                            if (!slide.imagePrompt?.trim()) {
                                 return { text: slide.text, imageUrl: '' };
