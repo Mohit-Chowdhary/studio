@@ -267,7 +267,8 @@ export default function LessonPlanner() {
     setIsLoading(true);
     setLessonPlan(null);
     
-    const result = await generateLessonPlanAction({ ...values, photoDataUri });
+    const payload = { ...values, ...(photoDataUri && { photoDataUri }) };
+    const result = await generateLessonPlanAction(payload);
 
     if ("error" in result) {
       toast({

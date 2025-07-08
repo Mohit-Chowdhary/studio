@@ -21,8 +21,7 @@ export async function generateContentAction(
     return result;
   } catch (error) {
     console.error('Error generating teaching content:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
+    return { error: 'An unexpected error occurred while generating content. Please check your input and try again.' };
   }
 }
 
@@ -37,8 +36,7 @@ export async function textToSpeechAction(
     return result;
   } catch (error) {
     console.error('Error generating audio:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
+    return { error: 'An unexpected error occurred while generating audio. Please try again.' };
   }
 }
 
@@ -53,8 +51,7 @@ export async function generateLessonPlanAction(
     return result;
   } catch (error) {
     console.error('Error generating lesson plan:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
+    return { error: 'An unexpected error occurred while generating the plan. The AI may be busy or the request could not be processed. Please try again in a moment.' };
   }
 }
 
@@ -69,7 +66,6 @@ export async function gradeDrawingAction(
     return result;
   } catch (error) {
     console.error('Error grading drawing:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
+    return { error: 'An unexpected error occurred while grading the drawing. Please try again.' };
   }
 }
