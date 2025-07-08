@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, Home, Settings } from "lucide-react";
+import { Bot, Home, Settings, MonitorPlay } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger } from "@/components/ui/sidebar";
 
 export function AppLayout({ children, title }: { children: React.ReactNode, title: string }) {
@@ -27,6 +27,14 @@ export function AppLayout({ children, title }: { children: React.ReactNode, titl
                 <Link href="/">
                   <Home />
                   <span>Lesson Planner</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Live Classroom" isActive={pathname === '/classroom'}>
+                <Link href="/classroom">
+                  <MonitorPlay />
+                  <span>Live Classroom</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
