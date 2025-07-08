@@ -315,46 +315,48 @@ export default function LessonPlanner() {
       </Card>
       
       {(isLoading || lessonPlan) && (
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline">Generated Lesson Plan</CardTitle>
-            <CardDescription>
-              Here is the AI-generated lesson plan based on your request.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {isLoading ? (
-              <div className="space-y-4 w-full">
-                <Skeleton className="w-1/2 h-8 rounded-lg" />
-                <Skeleton className="w-full h-24 rounded-lg" />
-                <Skeleton className="w-full h-24 rounded-lg" />
-              </div>
-            ) : (
-              lessonPlan?.plans.map((plan, planIndex) => (
-                <div key={planIndex} className="space-y-4 rounded-lg border p-4">
-                   <h2 className="text-2xl font-bold font-headline text-primary">
-                        Plan for {plan.gradeLevel}: {plan.topic}
-                    </h2>
-                  <Accordion type="single" collapsible className="w-full" defaultValue={plan.activities[0]?.title}>
-                    {plan.activities.map((activity, activityIndex) => (
-                      <AccordionItem value={activity.title} key={activityIndex}>
-                        <AccordionTrigger className="text-lg font-medium hover:no-underline">
-                            <div className="flex items-center gap-3">
-                                {formatToIcon(activity.format)}
-                                <span>{activity.title} <span className="text-sm font-normal text-muted-foreground">({activity.format})</span></span>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="p-4 bg-muted/20 rounded-b-md">
-                          <ActivityContent activity={activity} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
+        <div className="mt-12 animate-in fade-in slide-in-from-bottom-5 duration-500 ease-out">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline">Generated Lesson Plan</CardTitle>
+              <CardDescription>
+                Here is the AI-generated lesson plan based on your request.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {isLoading ? (
+                <div className="space-y-4 w-full">
+                  <Skeleton className="w-1/2 h-8 rounded-lg" />
+                  <Skeleton className="w-full h-24 rounded-lg" />
+                  <Skeleton className="w-full h-24 rounded-lg" />
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                lessonPlan?.plans.map((plan, planIndex) => (
+                  <div key={planIndex} className="space-y-4 rounded-lg border p-4 bg-muted/30">
+                     <h2 className="text-2xl font-bold font-headline text-primary">
+                          Plan for {plan.gradeLevel}: {plan.topic}
+                      </h2>
+                    <Accordion type="single" collapsible className="w-full" defaultValue={plan.activities[0]?.title}>
+                      {plan.activities.map((activity, activityIndex) => (
+                        <AccordionItem value={activity.title} key={activityIndex}>
+                          <AccordionTrigger className="text-lg font-medium hover:no-underline rounded-md px-4 hover:bg-muted/50">
+                              <div className="flex items-center gap-3">
+                                  {formatToIcon(activity.format)}
+                                  <span>{activity.title} <span className="text-sm font-normal text-muted-foreground">({activity.format})</span></span>
+                              </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="p-4 bg-muted/20 rounded-b-md">
+                            <ActivityContent activity={activity} />
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

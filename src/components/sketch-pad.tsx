@@ -14,11 +14,11 @@ interface SketchpadProps {
 
 const COLORS = [
     { hex: '#FFFFFF', name: 'White' },
-    { hex: '#F472B6', name: 'Pink' },
-    { hex: '#C084FC', name: 'Purple' },
-    { hex: '#60A5FA', name: 'Blue' },
-    { hex: '#34D399', name: 'Green' },
-    { hex: '#FBBF24', name: 'Yellow' },
+    { hex: '#F0ABFC', name: 'Fuchsia' },
+    { hex: '#A78BFA', name: 'Violet' },
+    { hex: '#38BDF8', name: 'Sky Blue' },
+    { hex: '#A3E635', name: 'Lime' },
+    { hex: '#FACC15', name: 'Yellow' },
 ];
 
 export function Sketchpad({ width = 500, height = 400, onSubmit, isSubmitting }: SketchpadProps) {

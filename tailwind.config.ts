@@ -11,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['var(--font-roboto)', ...fontFamily.sans],
-        headline: ['var(--font-roboto)', ...fontFamily.sans],
+        body: ['var(--font-inter)', ...fontFamily.sans],
+        headline: ['var(--font-inter)', ...fontFamily.sans],
         code: ['monospace'],
       },
       colors: {

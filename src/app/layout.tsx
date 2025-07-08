@@ -1,14 +1,14 @@
-import { Roboto } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import type { Metadata } from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import './globals.css';
 
-const roboto = Roboto({
-  weight: ['400', '500', '700'],
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-roboto',
+  variable: '--font-inter',
 });
 
 
@@ -23,9 +23,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={roboto.variable}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body className="font-body antialiased">
-        {children}
+        <SidebarProvider>
+          {children}
+        </SidebarProvider>
         <Toaster />
       </body>
     </html>
