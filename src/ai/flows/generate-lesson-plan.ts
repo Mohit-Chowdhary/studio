@@ -80,7 +80,7 @@ const lessonPlannerPrompt = ai.definePrompt({
             topic: z.string(),
             activities: z.array(
               z.object({
-                title: z.string(),
+                title: z.string().describe('A short, descriptive, plain-text title for this activity. Do not use any Markdown formatting like asterisks.'),
                 format: z.enum(['story', 'worksheet', 'quiz', 'explanation', 'visual aid', 'drawing activity']),
                 // For text formats, we generate the content directly.
                 content: z.string().optional(),
@@ -108,7 +108,7 @@ const lessonPlannerPrompt = ai.definePrompt({
 3.  **Generate Rich, Detailed Content:** Do not provide simple, one-paragraph answers. Each activity should be comprehensive.
     *   **For 'story':** Write a complete, engaging narrative with a beginning, middle, and end. The story should be at least 300 words and weave in the educational concepts seamlessly. Use Markdown for formatting (**bold**, *italics*).
     *   **For 'worksheet':** Create a multi-part worksheet. Include different types of questions, such as fill-in-the-blanks, multiple choice, short answer questions, and matching exercises. Make it a complete, ready-to-print resource. Use Markdown for formatting.
-    *   **For 'explanation':** Provide a thorough, multi-part explanation broken into 3-5 sections, like a mini-presentation. Each section should have detailed paragraphs of text and a highly descriptive 'imagePrompt' for an accompanying illustration. Use simple analogies, clear headings, and highlight key terms with Markdown (**bold**). The final output for this activity format should be a series of slides in the 'slides' field, not text in the 'content' field.
+    *   **For 'explanation':** Provide a thorough, multi-part explanation broken into 3-5 sections, like a mini-presentation. For each section, write at least 75-100 words of detailed, book-like explanatory text. Use simple analogies, clear headings, and highlight key terms with Markdown (**bold**). The final output for this activity format should be a series of slides in the 'slides' field, not text in the 'content' field.
     *   **For 'drawing activity':** Provide a very specific prompt that encourages detailed scientific or explanatory drawing (e.g., 'Draw a detailed diagram of a plant cell, labeling the nucleus, cell wall, cytoplasm, and chloroplasts.'). The output should be in the 'content' field.
     *   **For 'quiz':** Generate a challenging 3-5 question multiple-choice quiz. The questions should test understanding, not just recall. Include plausible distractors for the incorrect options.
     *   **For 'visual aid':** Generate a series of 3-5 slides. Each slide must have concise, informative text and a highly detailed, descriptive 'imagePrompt' for an AI image generator to create a vivid and accurate illustration.
