@@ -95,7 +95,7 @@ const ActivityContent = ({ activity }: { activity: GenerateLessonPlanOutput['pla
                 {!gradingResult ? (
                     <Sketchpad key={sketchpadKey} onSubmit={handleDrawingSubmit} isSubmitting={isGrading} />
                 ) : (
-                    <Card className="w-full max-w-lg text-center">
+                    <Card className="w-full max-w-lg text-center shadow-lg">
                         <CardHeader>
                             <CardTitle className="font-headline">Feedback</CardTitle>
                         </CardHeader>
@@ -252,7 +252,7 @@ export default function LessonPlanner() {
 
   return (
     <div className="space-y-8">
-      <Card className="shadow-md">
+      <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline">Lesson Planner</CardTitle>
           <CardDescription>
@@ -315,7 +315,7 @@ export default function LessonPlanner() {
       </Card>
       
       {(isLoading || lessonPlan) && (
-        <Card className="shadow-md">
+        <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline">Generated Lesson Plan</CardTitle>
             <CardDescription>

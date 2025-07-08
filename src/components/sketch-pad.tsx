@@ -14,10 +14,11 @@ interface SketchpadProps {
 
 const COLORS = [
     { hex: '#FFFFFF', name: 'White' },
-    { hex: '#EF4444', name: 'Red' },
-    { hex: '#FBBF24', name: 'Yellow' },
-    { hex: '#4ADE80', name: 'Green' },
+    { hex: '#F472B6', name: 'Pink' },
+    { hex: '#C084FC', name: 'Purple' },
     { hex: '#60A5FA', name: 'Blue' },
+    { hex: '#34D399', name: 'Green' },
+    { hex: '#FBBF24', name: 'Yellow' },
 ];
 
 export function Sketchpad({ width = 500, height = 400, onSubmit, isSubmitting }: SketchpadProps) {
@@ -99,7 +100,7 @@ export function Sketchpad({ width = 500, height = 400, onSubmit, isSubmitting }:
     const canvas = canvasRef.current;
     const context = contextRef.current;
     if (canvas && context) {
-      context.fillStyle = '#2D3748'; // A dark, chalkboard-like color
+      context.fillStyle = '#111827'; // A dark, chalkboard-like color (gray-900)
       context.fillRect(0, 0, width, height);
     }
   };
@@ -122,7 +123,7 @@ export function Sketchpad({ width = 500, height = 400, onSubmit, isSubmitting }:
         onTouchStart={startDrawing}
         onTouchEnd={finishDrawing}
         onTouchMove={draw}
-        className="border-2 border-primary rounded-lg shadow-lg cursor-crosshair bg-[#2D3748]"
+        className="border-2 border-primary rounded-lg shadow-lg cursor-crosshair bg-gray-900"
       />
       <div className="flex w-full items-center justify-between px-1">
         <div className="flex items-center gap-2">
