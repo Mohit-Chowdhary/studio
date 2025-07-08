@@ -1,10 +1,12 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation, PenSquare, RotateCcw } from "lucide-react";
+import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation, PenSquare, RotateCcw, ImageIcon, Camera, XCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -174,6 +176,9 @@ export default function LessonPlanner() {
   const [lessonPlan, setLessonPlan] = useState<GenerateLessonPlanOutput | null>(null);
   const [isListening, setIsListening] = useState(false);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
+  const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
 
@@ -231,11 +236,38 @@ export default function LessonPlanner() {
     }
   };
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 4 * 1024 * 1024) { // 4MB limit
+        toast({
+          variant: 'destructive',
+          title: 'Image Too Large',
+          description: 'Please select an image smaller than 4MB.',
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoDataUri(reader.result as string);
+      };
+      reader.onerror = () => {
+        toast({
+          variant: 'destructive',
+          title: 'Error Reading File',
+          description: 'There was an issue uploading your image.',
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+    event.target.value = '';
+  };
+
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setLessonPlan(null);
     
-    const result = await generateLessonPlanAction(values);
+    const result = await generateLessonPlanAction({ ...values, photoDataUri });
 
     if ("error" in result) {
       toast({
@@ -295,6 +327,40 @@ export default function LessonPlanner() {
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-4">
+                <FormLabel>Add an Image (Optional)</FormLabel>
+                <div className="flex flex-wrap gap-4 items-start">
+                    <div className="flex gap-4">
+                        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            <ImageIcon className="mr-2" /> Upload Photo
+                        </Button>
+                        <input type="file" accept="image/*" capture="user" ref={cameraInputRef} onChange={handleImageChange} className="hidden" />
+                        <Button type="button" variant="outline" onClick={() => cameraInputRef.current?.click()}>
+                            <Camera className="mr-2" /> Use Camera
+                        </Button>
+                    </div>
+                    {photoDataUri && (
+                    <div className="relative mt-4 w-fit sm:mt-0">
+                        <Image src={photoDataUri} alt="Lesson plan context" width={150} height={150} className="rounded-lg border-2 border-primary object-cover aspect-square shadow-md" />
+                        <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute -top-3 -right-3 h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
+                        onClick={() => setPhotoDataUri(null)}
+                        >
+                        <XCircle />
+                        <span className="sr-only">Remove image</span>
+                        </Button>
+                    </div>
+                    )}
+                </div>
+                <p className="text-xs text-muted-foreground">Provide an image of a textbook page, diagram, or object for context. Max 4MB.</p>
+              </div>
+
+
               <Button
                 type="submit"
                 disabled={isLoading}

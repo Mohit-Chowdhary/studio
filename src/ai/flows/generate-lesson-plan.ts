@@ -51,6 +51,7 @@ const SingleGradeLessonPlanSchema = z.object({
 
 const GenerateLessonPlanInputSchema = z.object({
   prompt: z.string().describe('The natural language prompt from the teacher describing their needs.'),
+  photoDataUri: z.string().optional().describe("A photo for context, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type GenerateLessonPlanInput = z.infer<typeof GenerateLessonPlanInputSchema>;
 
@@ -99,6 +100,11 @@ const lessonPlannerPrompt = ai.definePrompt({
     prompt: `You are an expert curriculum designer and AI teaching assistant. Your goal is to create a comprehensive, engaging, and age-appropriate lesson plan based on a teacher's request.
 
     Analyze the teacher's prompt carefully. Identify the core topic(s), the target grade level(s), and any specified languages or formats. If a language is specified, all generated content must be in that language.
+
+    {{#if photoDataUri}}
+    An image has been provided as context. Analyze the image to help determine the subject matter. If it's a page from a textbook, use its content to create the lesson plan. If it's an object or scene, use that as the basis for the lesson. Recognize the book if it's a common textbook.
+    Image Context: {{media url=photoDataUri}}
+    {{/if}}
 
     For each grade level identified, create a tailored lesson plan consisting of 2-4 diverse activities. The activities should be varied and suitable for the specified grade.
 
