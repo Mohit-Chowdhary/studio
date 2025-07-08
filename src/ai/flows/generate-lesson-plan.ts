@@ -106,7 +106,8 @@ const lessonPlannerPrompt = ai.definePrompt({
     1.  Provide a short, descriptive 'title'.
     2.  Identify the correct 'format' ('story', 'worksheet', 'quiz', 'explanation', 'visual aid').
     3.  Generate the complete content for the activity based on its format:
-        -   For 'story', 'worksheet', or 'explanation': Generate the full text content.
+        -   For 'story' or 'worksheet': Generate the full text content as requested.
+        -   For 'explanation': Generate a clear, simple, and engaging explanation. Use analogies and simple examples suitable for the target grade level to make complex topics easy to understand.
         -   For 'quiz': Generate a 3-5 question multiple-choice quiz with 4 options and a correct answer for each question.
         -   For 'visual aid': Generate a series of 3-5 slides. Each slide must have concise text and a detailed, SFW 'imagePrompt' for an AI image generator.
 

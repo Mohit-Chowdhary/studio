@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle } from "lucide-react";
+import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -100,7 +100,7 @@ const formatToIcon = (format: string) => {
         case 'worksheet': return <FileText className="w-4 h-4 text-primary" />;
         case 'quiz': return <HelpCircle className="w-4 h-4 text-primary" />;
         case 'explanation': return <Beaker className="w-4 h-4 text-primary" />;
-        case 'visual aid': return <Beaker className="w-4 h-4 text-primary" />;
+        case 'visual aid': return <Presentation className="w-4 h-4 text-primary" />;
         default: return <FileText className="w-4 h-4 text-primary" />;
     }
 }
