@@ -8,6 +8,7 @@ import {
 } from '@/ai/flows/generate-teaching-content';
 import { textToSpeech, type TextToSpeechOutput } from '@/ai/flows/text-to-speech';
 import { generateLessonPlan, type GenerateLessonPlanInput, type GenerateLessonPlanOutput } from '@/ai/flows/generate-lesson-plan';
+import { gradeDrawing, type GradeDrawingInput, type GradeDrawingOutput } from '@/ai/flows/grade-drawing';
 
 export async function generateContentAction(
   input: GenerateTeachingContentInput
@@ -52,6 +53,22 @@ export async function generateLessonPlanAction(
     return result;
   } catch (error) {
     console.error('Error generating lesson plan:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
+  }
+}
+
+export async function gradeDrawingAction(
+  input: GradeDrawingInput
+): Promise<GradeDrawingOutput | { error: string }> {
+  try {
+    const result = await gradeDrawing(input);
+    if (!result || !result.feedback) {
+      throw new Error('Failed to grade drawing. The AI model returned an empty response.');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error grading drawing:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { error: `An unexpected error occurred: ${errorMessage}. Please try again later.` };
   }

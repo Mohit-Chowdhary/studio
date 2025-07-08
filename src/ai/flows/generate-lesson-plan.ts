@@ -37,8 +37,8 @@ const QuizSchema = z.object({
 
 const ActivitySchema = z.object({
   title: z.string().describe('A short, descriptive title for this activity.'),
-  format: z.enum(['story', 'worksheet', 'quiz', 'explanation', 'visual aid']).describe('The format of the generated content for this activity.'),
-  content: z.string().optional().describe('The generated text-based content (for story, worksheet, or explanation).'),
+  format: z.enum(['story', 'worksheet', 'quiz', 'explanation', 'visual aid', 'drawing activity']).describe('The format of the generated content for this activity.'),
+  content: z.string().optional().describe('The generated text-based content (for story, worksheet, explanation, or a question for a drawing activity).'),
   quiz: QuizSchema.optional().describe('The generated quiz content.'),
   slides: z.array(SlideSchema).optional().describe('The generated slides for a visual aid.'),
 });
@@ -80,7 +80,7 @@ const lessonPlannerPrompt = ai.definePrompt({
             activities: z.array(
               z.object({
                 title: z.string(),
-                format: z.enum(['story', 'worksheet', 'quiz', 'explanation', 'visual aid']),
+                format: z.enum(['story', 'worksheet', 'quiz', 'explanation', 'visual aid', 'drawing activity']),
                 // For text formats, we generate the content directly.
                 content: z.string().optional(),
                 // For quiz, we generate the structure.
@@ -104,10 +104,11 @@ const lessonPlannerPrompt = ai.definePrompt({
 
     For each activity, you must:
     1.  Provide a short, descriptive 'title'.
-    2.  Identify the correct 'format' ('story', 'worksheet', 'quiz', 'explanation', 'visual aid').
+    2.  Identify the correct 'format' ('story', 'worksheet', 'quiz', 'explanation', 'visual aid', 'drawing activity').
     3.  Generate the complete content for the activity based on its format:
         -   For 'story' or 'worksheet': Generate the full text content as requested.
         -   For 'explanation': Generate a clear, simple, and engaging explanation. Use analogies and simple examples suitable for the target grade level to make complex topics easy to understand.
+        -   For 'drawing activity': Generate a question or instruction that requires the student to draw their answer (e.g., 'Draw the life cycle of a butterfly', 'Draw a diagram of a plant cell and label its parts'). The output should be in the 'content' field.
         -   For 'quiz': Generate a 3-5 question multiple-choice quiz with 4 options and a correct answer for each question.
         -   For 'visual aid': Generate a series of 3-5 slides. Each slide must have concise text and a detailed, SFW 'imagePrompt' for an AI image generator.
 

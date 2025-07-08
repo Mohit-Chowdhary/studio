@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation } from "lucide-react";
+import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation, PenSquare, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,10 +14,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { generateLessonPlanAction, textToSpeechAction } from "@/app/actions";
+import { generateLessonPlanAction, textToSpeechAction, gradeDrawingAction } from "@/app/actions";
 import type { GenerateLessonPlanOutput } from "@/ai/flows/generate-lesson-plan";
+import type { GradeDrawingOutput } from "@/ai/flows/grade-drawing";
 import { InteractiveQuiz } from "./interactive-quiz";
 import { SlideshowCarousel } from "./slideshow-carousel";
+import { Sketchpad } from "./sketch-pad";
 
 const formSchema = z.object({
   prompt: z.string().min(10, "Please describe your lesson plan requirements in at least 10 characters."),
@@ -29,6 +31,9 @@ const ActivityContent = ({ activity }: { activity: GenerateLessonPlanOutput['pla
     const [isAudioLoading, setIsAudioLoading] = useState(false);
     const [audioSrc, setAudioSrc] = useState<string | null>(null);
     const [audioKey, setAudioKey] = useState(0);
+    const [isGrading, setIsGrading] = useState(false);
+    const [gradingResult, setGradingResult] = useState<GradeDrawingOutput | null>(null);
+    const [sketchpadKey, setSketchpadKey] = useState(Date.now());
     const { toast } = useToast();
 
     const textContent = activity.content;
@@ -52,6 +57,63 @@ const ActivityContent = ({ activity }: { activity: GenerateLessonPlanOutput['pla
         }
         setIsAudioLoading(false);
     };
+
+    const handleDrawingSubmit = async (drawingDataUri: string) => {
+        if (!activity.content) return;
+        setIsGrading(true);
+        setGradingResult(null);
+
+        const result = await gradeDrawingAction({
+            question: activity.content,
+            drawingDataUri,
+        });
+
+        if ("error" in result) {
+            toast({
+                variant: "destructive",
+                title: "Error Grading Drawing",
+                description: result.error,
+            });
+        } else {
+            setGradingResult(result);
+        }
+        setIsGrading(false);
+    };
+
+    const handleTryAgain = () => {
+        setGradingResult(null);
+        setSketchpadKey(Date.now()); // Re-mount the sketchpad to clear it
+    };
+
+    if (activity.format === 'drawing activity') {
+        return (
+            <div className="w-full space-y-4 flex flex-col items-center">
+                 <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap rounded-md border bg-muted/20 p-4 w-full text-center">
+                    <p className="font-semibold text-lg">{activity.content}</p>
+                </div>
+
+                {!gradingResult ? (
+                    <Sketchpad key={sketchpadKey} onSubmit={handleDrawingSubmit} isSubmitting={isGrading} />
+                ) : (
+                    <Card className="w-full max-w-lg text-center">
+                        <CardHeader>
+                            <CardTitle className="font-headline">Feedback</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className={`text-2xl font-bold ${gradingResult.isCorrect ? 'text-primary' : 'text-destructive'}`}>
+                                {gradingResult.isCorrect ? 'Great Job!' : 'Good Try!'}
+                            </p>
+                            <p className="text-foreground/80">{gradingResult.feedback}</p>
+                            <Button onClick={handleTryAgain}>
+                                <RotateCcw className="mr-2 h-4 w-4" />
+                                Try Again
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+        )
+    }
 
     if (activity.quiz) {
         return <InteractiveQuiz quiz={activity.quiz} topic={activity.title} />;
@@ -101,6 +163,7 @@ const formatToIcon = (format: string) => {
         case 'quiz': return <HelpCircle className="w-4 h-4 text-primary" />;
         case 'explanation': return <Beaker className="w-4 h-4 text-primary" />;
         case 'visual aid': return <Presentation className="w-4 h-4 text-primary" />;
+        case 'drawing activity': return <PenSquare className="w-4 h-4 text-primary" />;
         default: return <FileText className="w-4 h-4 text-primary" />;
     }
 }
