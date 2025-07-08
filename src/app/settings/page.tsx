@@ -87,7 +87,6 @@ export default function SettingsPage() {
                   <SelectValue placeholder="Select a grade" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="" disabled>Select a grade</SelectItem>
                   <SelectItem value="preschool">Preschool</SelectItem>
                   <SelectItem value="kindergarten">Kindergarten</SelectItem>
                   <SelectItem value="1">Class 1</SelectItem>
