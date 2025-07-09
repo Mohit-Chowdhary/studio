@@ -7,16 +7,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sketchpad } from "@/components/sketch-pad";
+import { InteractiveQuiz } from "@/components/interactive-quiz";
 import { gradeDrawingAction } from "@/app/actions";
 import type { GradeDrawingOutput } from "@/ai/flows/grade-drawing";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Lightbulb, RotateCcw } from "lucide-react";
 import { useState } from "react";
 
+const CLASSROOM_PREFIX = 'sahayak-classroom-';
+
+interface Activity {
+  type: 'drawing' | 'quiz';
+  content: any;
+  topic: string;
+}
+
 export default function StudentPage() {
     const [roomCode, setRoomCode] = useState("");
     const [isJoined, setIsJoined] = useState(false);
-    const [currentQuestion, setCurrentQuestion] = useState("");
+    const [activity, setActivity] = useState<Activity | null>(null);
     const [isGrading, setIsGrading] = useState(false);
     const [gradingResult, setGradingResult] = useState<GradeDrawingOutput | null>(null);
     const [sketchpadKey, setSketchpadKey] = useState(Date.now());
@@ -24,20 +33,37 @@ export default function StudentPage() {
 
     const handleJoinRoom = () => {
         if (roomCode.trim().length < 6) return;
-        // In a real app, this would fetch the question for the room code.
-        // For this prototype, we'll use a hardcoded question.
-        setCurrentQuestion("This is a placeholder question. In a real app, this would come from the teacher's room.");
-        setIsJoined(true);
+        
+        try {
+            const roomDataString = localStorage.getItem(`${CLASSROOM_PREFIX}${roomCode.toUpperCase()}`);
+            if (roomDataString) {
+                const roomData = JSON.parse(roomDataString);
+                setActivity(roomData);
+                setIsJoined(true);
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Room Not Found",
+                    description: "Please check the code and try again.",
+                });
+            }
+        } catch (error) {
+             toast({
+                variant: "destructive",
+                title: "Error Joining Room",
+                description: "Could not read classroom data. The data might be corrupted.",
+            });
+        }
     };
     
     const handleDrawingSubmit = async (drawingDataUri: string) => {
-        if (!currentQuestion) return;
+        if (!activity || activity.type !== 'drawing') return;
         setIsGrading(true);
         setGradingResult(null);
 
         const result = await gradeDrawingAction({
-        question: currentQuestion,
-        drawingDataUri,
+            question: activity.content,
+            drawingDataUri,
         });
 
         if ("error" in result) {
@@ -57,6 +83,40 @@ export default function StudentPage() {
         setSketchpadKey(Date.now()); // Re-mount the sketchpad to clear it
     };
 
+    const renderActivity = () => {
+        if (!activity) return null;
+
+        switch (activity.type) {
+            case 'drawing':
+                return !gradingResult ? (
+                    <Sketchpad key={sketchpadKey} onSubmit={handleDrawingSubmit} isSubmitting={isGrading} />
+                ) : (
+                    <Card className="w-full max-w-lg text-center shadow-lg animate-in fade-in duration-500">
+                        <CardHeader>
+                            <CardTitle className="font-headline flex items-center justify-center gap-2">
+                                <Lightbulb className="text-yellow-400" />
+                                AI Feedback
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className={`text-2xl font-bold ${gradingResult.isCorrect ? 'text-primary' : 'text-destructive'}`}>
+                                {gradingResult.isCorrect ? 'Great Job!' : 'Good Try!'}
+                            </p>
+                            <p className="text-foreground/80">{gradingResult.feedback}</p>
+                            <Button onClick={handleTryAgain}>
+                                <RotateCcw className="mr-2 h-4 w-4" />
+                                Try Again
+                            </Button>
+                        </CardContent>
+                    </Card>
+                );
+            case 'quiz':
+                return <InteractiveQuiz quiz={activity.content} topic={activity.topic} />;
+            default:
+                return <p className="text-destructive">Unknown activity type.</p>;
+        }
+    };
+
     return (
         <AppLayout title="Student Classroom">
             <Card className="shadow-lg">
@@ -66,7 +126,7 @@ export default function StudentPage() {
                     Student's Classroom
                     </CardTitle>
                     <CardDescription>
-                        {isJoined ? "The teacher has set a question. Draw your answer below." : "Enter the room code from your teacher to join the class."}
+                        {isJoined ? "The teacher has set an activity for you." : "Enter the room code from your teacher to join the class."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center space-y-6">
@@ -86,32 +146,15 @@ export default function StudentPage() {
                         </div>
                     ) : (
                         <>
-                            <div className="prose prose-lg max-w-none text-foreground text-center rounded-md border bg-muted/30 p-4 w-full shadow-inner">
-                                <p className="font-semibold text-xl">{currentQuestion}</p>
-                            </div>
-                            
-                            {!gradingResult ? (
-                                <Sketchpad key={sketchpadKey} onSubmit={handleDrawingSubmit} isSubmitting={isGrading} />
-                            ) : (
-                                <Card className="w-full max-w-lg text-center shadow-lg animate-in fade-in duration-500">
-                                    <CardHeader>
-                                        <CardTitle className="font-headline flex items-center justify-center gap-2">
-                                            <Lightbulb className="text-yellow-400" />
-                                            AI Feedback
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <p className={`text-2xl font-bold ${gradingResult.isCorrect ? 'text-primary' : 'text-destructive'}`}>
-                                            {gradingResult.isCorrect ? 'Great Job!' : 'Good Try!'}
-                                        </p>
-                                        <p className="text-foreground/80">{gradingResult.feedback}</p>
-                                        <Button onClick={handleTryAgain}>
-                                            <RotateCcw className="mr-2 h-4 w-4" />
-                                            Try Again
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                            {activity?.type === 'drawing' && (
+                                <div className="prose prose-lg max-w-none text-foreground text-center rounded-md border bg-muted/30 p-4 w-full shadow-inner">
+                                    <p className="font-semibold text-xl">{activity.content}</p>
+                                </div>
                             )}
+                            
+                            <div className="w-full flex justify-center">
+                               {renderActivity()}
+                            </div>
                         </>
                     )}
                 </CardContent>
