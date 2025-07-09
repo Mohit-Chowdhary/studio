@@ -1,17 +1,16 @@
-import { AppLayout } from "@/components/app-layout";
-import { Button } from "@/components/ui/button";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookUser, GraduationCap, User } from "lucide-react";
+import { BookUser, GraduationCap, User, Bot } from "lucide-react";
 import Link from "next/link";
 
 export default function RoleSelectionPage() {
   return (
-      <AppLayout title="Welcome">
-        <div className="flex flex-col items-center justify-center text-center">
-            <div className="mb-12">
-                <h1 className="text-4xl font-bold font-headline tracking-tight">Welcome to SahayakAI</h1>
-                <p className="text-muted-foreground mt-2 text-lg">Your AI-powered teaching and learning companion.</p>
-                <p className="text-muted-foreground mt-1">Please select your role to get started.</p>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
+        <div className="flex flex-col items-center justify-center text-center w-full">
+            <div className="mb-12 flex flex-col items-center gap-4">
+                <Bot className="w-16 h-16 text-primary" />
+                <h1 className="text-4xl font-bold font-headline tracking-tight sm:text-5xl">Welcome to SahayakAI</h1>
+                <p className="text-muted-foreground mt-2 text-lg max-w-2xl">Your AI-powered teaching and learning companion. Please select your role to get started.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
                 <Link href="/teacher" passHref>
@@ -55,6 +54,6 @@ export default function RoleSelectionPage() {
                 </Link>
             </div>
         </div>
-      </AppLayout>
+      </main>
   );
 }
