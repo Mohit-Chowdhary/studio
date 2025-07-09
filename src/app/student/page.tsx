@@ -58,19 +58,42 @@ export default function StudentPage() {
     const handleJoinRoom = () => {
         if (roomCode.trim().length < 6 || studentName.trim().length < 2) return;
         
+        const upperCaseRoomCode = roomCode.toUpperCase();
+        const roomDataString = localStorage.getItem(`${CLASSROOM_PREFIX}${upperCaseRoomCode}`);
+
+        if (!roomDataString) {
+            toast({
+                variant: "destructive",
+                title: "Room Not Found",
+                description: "Please check the code and try again.",
+            });
+            return;
+        }
+
         try {
-            const roomDataString = localStorage.getItem(`${CLASSROOM_PREFIX}${roomCode.toUpperCase()}`);
-            if (roomDataString) {
-                const roomData = JSON.parse(roomDataString);
-                setActivity(roomData);
-                setIsJoined(true);
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Room Not Found",
-                    description: "Please check the code and try again.",
-                });
+            const roomData = JSON.parse(roomDataString);
+            
+            // Check for previous quiz submission
+            if (roomData.type === 'quiz') {
+                const submissionsKey = `${SUBMISSIONS_PREFIX}${upperCaseRoomCode}`;
+                const existingSubmissionsRaw = localStorage.getItem(submissionsKey);
+                if (existingSubmissionsRaw) {
+                    const existingSubmissions = JSON.parse(existingSubmissionsRaw);
+                    const mySubmission = existingSubmissions.find((s: any) => s.studentName === studentName);
+                    if (mySubmission) {
+                        toast({
+                            variant: "default",
+                            title: "Already Submitted",
+                            description: "You have already completed the quiz for this room.",
+                        });
+                        return;
+                    }
+                }
             }
+
+            setActivity(roomData);
+            setIsJoined(true);
+
         } catch (error) {
              toast({
                 variant: "destructive",

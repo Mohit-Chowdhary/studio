@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { RotateCcw, CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -67,14 +67,6 @@ export function InteractiveQuiz({ quiz, topic, onComplete }: InteractiveQuizProp
     setShowResult(true);
   };
 
-  const handleRestart = () => {
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
-    setScore(0);
-    setShowResult(false);
-    setIsFinished(false);
-  };
-
   if (isFinished) {
     return (
       <Card className="text-center p-6 shadow-md w-full max-w-lg">
@@ -87,10 +79,7 @@ export function InteractiveQuiz({ quiz, topic, onComplete }: InteractiveQuizProp
             {score} / {quiz.questions.length}
           </p>
           <p className="text-lg text-foreground/80">Great job! Your result has been sent to the teacher.</p>
-          <Button onClick={handleRestart} size="lg">
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Restart Quiz
-          </Button>
+          <p className="text-sm text-muted-foreground">You may now close this page.</p>
         </CardContent>
       </Card>
     );
