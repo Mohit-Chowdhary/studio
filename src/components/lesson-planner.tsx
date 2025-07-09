@@ -303,7 +303,7 @@ export default function LessonPlanner() {
                     <div className="relative">
                       <FormControl>
                         <Textarea
-                          placeholder="e.g., I'll be teaching plants to Class 3 and Class 5 next week in Hindi. Make a plan with stories, quizzes, and visual aids."
+                          placeholder="e.g., Explain photosynthesis to a 7th grader. I need a detailed explanation with images and a short quiz."
                           rows={4}
                           {...field}
                           className="pr-12 text-base"
