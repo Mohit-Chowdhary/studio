@@ -27,7 +27,13 @@ interface GeneratedQuiz {
   questions: QuizQuestion[];
 }
 
-export function InteractiveQuiz({ quiz, topic }: { quiz: GeneratedQuiz, topic: string }) {
+interface InteractiveQuizProps {
+  quiz: GeneratedQuiz;
+  topic: string;
+  onComplete?: (result: { score: number; total: number }) => void;
+}
+
+export function InteractiveQuiz({ quiz, topic, onComplete }: InteractiveQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [score, setScore] = useState(0);
@@ -44,6 +50,11 @@ export function InteractiveQuiz({ quiz, topic }: { quiz: GeneratedQuiz, topic: s
     if (currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
+      // The onComplete callback should be called with the final score.
+      // We need to make sure the score is final before calling it.
+      // The score state updates might not be synchronous.
+      const finalScore = selectedAnswer === currentQuestion.correctAnswer ? score + 1 : score;
+      onComplete?.({ score: finalScore, total: quiz.questions.length });
       setIsFinished(true);
     }
   };
@@ -66,7 +77,7 @@ export function InteractiveQuiz({ quiz, topic }: { quiz: GeneratedQuiz, topic: s
 
   if (isFinished) {
     return (
-      <Card className="text-center p-6 shadow-md w-full">
+      <Card className="text-center p-6 shadow-md w-full max-w-lg">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Quiz Complete!</CardTitle>
           <CardDescription>You've finished the quiz on "{topic}"</CardDescription>
@@ -75,7 +86,7 @@ export function InteractiveQuiz({ quiz, topic }: { quiz: GeneratedQuiz, topic: s
           <p className="text-4xl font-bold text-primary">
             {score} / {quiz.questions.length}
           </p>
-          <p className="text-lg text-foreground/80">Great job!</p>
+          <p className="text-lg text-foreground/80">Great job! Your result has been sent to the teacher.</p>
           <Button onClick={handleRestart} size="lg">
             <RotateCcw className="mr-2 h-4 w-4" />
             Restart Quiz
@@ -88,7 +99,7 @@ export function InteractiveQuiz({ quiz, topic }: { quiz: GeneratedQuiz, topic: s
   const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full max-w-lg">
       <div className="flex items-center gap-4">
         <p className="text-sm font-medium text-foreground/80">Question {currentQuestionIndex + 1} of {quiz.questions.length}</p>
         <Progress value={((currentQuestionIndex + 1) / quiz.questions.length) * 100} className="w-full h-2" />

@@ -9,11 +9,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookUser, PenSquare, HelpCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Image from "next/image";
 import { generateContentAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 
 const CLASSROOM_PREFIX = 'sahayak-classroom-';
+const SUBMISSIONS_PREFIX = 'sahayak-submissions-';
+
+type Submission = {
+    studentName: string;
+    type: 'drawing' | 'quiz';
+    content?: string; // data URI for drawing
+    feedback?: string;
+    isCorrect?: boolean;
+    score?: number;
+    total?: number;
+};
 
 export default function TeacherPage() {
     const [activityType, setActivityType] = useState('drawing');
@@ -22,7 +34,41 @@ export default function TeacherPage() {
     const [roomCode, setRoomCode] = useState("");
     const [isRoomCreated, setIsRoomCreated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [submissions, setSubmissions] = useState<Submission[]>([]);
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (!isRoomCreated || !roomCode) return;
+
+        const submissionsKey = `${SUBMISSIONS_PREFIX}${roomCode}`;
+
+        // Function to load submissions from local storage
+        const loadSubmissions = () => {
+             const existingSubmissions = localStorage.getItem(submissionsKey);
+            if (existingSubmissions) {
+                try {
+                    setSubmissions(JSON.parse(existingSubmissions));
+                } catch(e) {
+                    console.error("Failed to parse submissions", e)
+                    setSubmissions([]);
+                }
+            }
+        }
+       
+        loadSubmissions();
+
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === submissionsKey) {
+                loadSubmissions();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [isRoomCreated, roomCode]);
 
     const handleCreateRoom = async () => {
         setIsLoading(true);
@@ -59,6 +105,9 @@ export default function TeacherPage() {
                 const roomData = { type: 'quiz', content: result.quiz, topic: topic };
                 localStorage.setItem(`${CLASSROOM_PREFIX}${newRoomCode}`, JSON.stringify(roomData));
             }
+            
+            // Clear any old submissions for this new room code
+            localStorage.removeItem(`${SUBMISSIONS_PREFIX}${newRoomCode}`);
 
             setRoomCode(newRoomCode);
             setIsRoomCreated(true);
@@ -132,8 +181,38 @@ export default function TeacherPage() {
                             <div className="bg-background inline-block p-4 rounded-lg border-2 border-dashed border-primary">
                                 <p className="text-4xl font-bold tracking-widest text-primary">{roomCode}</p>
                             </div>
-                            <p className="text-muted-foreground pt-4">Waiting for student submissions...</p>
-                            <p className="text-xs text-muted-foreground">(In a real app, student answers would appear here in real-time.)</p>
+                            
+                            <div className="mt-8 space-y-6 text-left">
+                                <h3 className="text-xl font-semibold text-center">Live Submissions</h3>
+                                {submissions.length === 0 ? (
+                                    <p className="text-muted-foreground text-center">Waiting for students to submit their work...</p>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {submissions.map((sub, index) => (
+                                            <Card key={index} className="text-left">
+                                                <CardHeader className="pb-2">
+                                                    <CardTitle className="text-base">{sub.studentName}</CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    {sub.type === 'drawing' ? (
+                                                        <div className="space-y-2">
+                                                            {sub.content && <Image src={sub.content} alt={`Drawing by ${sub.studentName}`} width={200} height={150} className="rounded-md border object-cover w-full"/>}
+                                                            {sub.feedback && (
+                                                                <p className="text-xs text-muted-foreground pt-2">
+                                                                    <span className={`font-bold ${sub.isCorrect ? 'text-primary' : 'text-destructive'}`}>AI Feedback: </span>
+                                                                    {sub.feedback}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xl font-bold">{sub.score}/{sub.total} Correct</p>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </CardContent>
