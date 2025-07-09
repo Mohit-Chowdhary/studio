@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { GradeDrawingOutput } from "@/ai/flows/grade-drawing";
 import { RotateCcw, Lightbulb, User, BookUser } from "lucide-react";
 
-export default function LiveClassroom() {
+export function GuestClassroom() {
   const [question, setQuestion] = useState("");
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [isQuestionSet, setIsQuestionSet] = useState(false);

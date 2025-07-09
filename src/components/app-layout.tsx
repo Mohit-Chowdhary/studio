@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, Home, Settings, MonitorPlay } from "lucide-react";
+import { Bot, Home, Settings, MonitorPlay, BookOpen } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger } from "@/components/ui/sidebar";
 
 export function AppLayout({ children, title }: { children: React.ReactNode, title: string }) {
@@ -23,18 +23,26 @@ export function AppLayout({ children, title }: { children: React.ReactNode, titl
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Lesson Planner" isActive={pathname === '/'}>
+              <SidebarMenuButton asChild tooltip="Home" isActive={pathname === '/'}>
                 <Link href="/">
                   <Home />
+                  <span>Home</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Lesson Planner" isActive={pathname.startsWith('/lesson-planner')}>
+                <Link href="/lesson-planner">
+                  <BookOpen />
                   <span>Lesson Planner</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Live Classroom" isActive={pathname === '/classroom'}>
-                <Link href="/classroom">
+              <SidebarMenuButton asChild tooltip="Classroom" isActive={pathname.startsWith('/teacher') || pathname.startsWith('/student') || pathname.startsWith('/guest')}>
+                <Link href="/">
                   <MonitorPlay />
-                  <span>Live Classroom</span>
+                  <span>Classroom</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
