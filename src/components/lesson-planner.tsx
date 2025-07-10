@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation, PenSquare, RotateCcw, ImageIcon, Camera, XCircle } from "lucide-react";
+import { Loader2, Wand2, Volume2, Mic, MicOff, BookOpen, FileText, Beaker, HelpCircle, Presentation, PenSquare, RotateCcw, ImageIcon, Camera, XCircle, Sparkles, Lightbulb } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { generateLessonPlanAction, textToSpeechAction, gradeDrawingAction } from "@/app/actions";
+import { generateLessonPlanAction, textToSpeechAction, gradeDrawingAction, improvePromptAction } from "@/app/actions";
 import type { GenerateLessonPlanOutput } from "@/ai/flows/generate-lesson-plan";
 import type { GradeDrawingOutput } from "@/ai/flows/grade-drawing";
 import { InteractiveQuiz } from "./interactive-quiz";
@@ -174,6 +174,8 @@ const formatToIcon = (format: string) => {
 
 export default function LessonPlanner() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isImproving, setIsImproving] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[] | null>(null);
   const [lessonPlan, setLessonPlan] = useState<GenerateLessonPlanOutput | null>(null);
   const [isListening, setIsListening] = useState(false);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
@@ -263,10 +265,33 @@ export default function LessonPlanner() {
     }
     event.target.value = '';
   };
+  
+  const handleImprovePrompt = async () => {
+    const currentPrompt = form.getValues("prompt");
+    if (currentPrompt.length < 10) {
+      form.trigger("prompt");
+      return;
+    }
+    setIsImproving(true);
+    setSuggestions(null);
+    const result = await improvePromptAction({ prompt: currentPrompt });
+    if ("error" in result) {
+        toast({ variant: "destructive", title: "Could not get suggestions", description: result.error });
+    } else {
+        setSuggestions(result.suggestions);
+    }
+    setIsImproving(false);
+  };
+
+  const applySuggestion = (suggestion: string) => {
+    form.setValue("prompt", suggestion, { shouldValidate: true });
+    setSuggestions(null);
+  };
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
     setLessonPlan(null);
+    setSuggestions(null);
     
     const payload = { ...values, ...(photoDataUri && { photoDataUri }) };
     const result = await generateLessonPlanAction(payload);
@@ -362,24 +387,60 @@ export default function LessonPlanner() {
                 <p className="text-xs text-muted-foreground">Provide an image of a textbook page, diagram, or object for context. Max 4MB.</p>
               </div>
 
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                size="lg"
-              >
-                {isLoading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Plan...</>
-                ) : (
-                  <><Wand2 className="mr-2 h-4 w-4" /> Generate Plan</>
-                )}
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full sm:w-auto"
+                    size="lg"
+                >
+                    {isLoading ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating Plan...</>
+                    ) : (
+                    <><Wand2 className="mr-2 h-4 w-4" /> Generate Plan</>
+                    )}
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isImproving || isLoading}
+                    className="w-full sm:w-auto"
+                    size="lg"
+                    onClick={handleImprovePrompt}
+                >
+                    {isImproving ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Improving...</>
+                    ) : (
+                        <><Sparkles className="mr-2 h-4 w-4" /> Improve Prompt</>
+                    )}
+                </Button>
+              </div>
             </form>
           </Form>
         </div>
       </div>
       
+       {suggestions && (
+        <div className="animate-in fade-in slide-in-from-bottom-5 duration-500 ease-out">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline">
+                        <Lightbulb className="text-yellow-400" />
+                        Prompt Suggestions
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {suggestions.map((s, i) => (
+                        <div key={i} className="text-sm p-3 bg-muted/50 rounded-md flex items-center justify-between gap-4">
+                            <p className="flex-1">{s}</p>
+                            <Button size="sm" variant="ghost" onClick={() => applySuggestion(s)}>Apply</Button>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+        </div>
+      )}
+
       {(isLoading || lessonPlan) && (
         <div className="animate-in fade-in slide-in-from-bottom-5 duration-500 ease-out">
             <Separator className="my-8" />

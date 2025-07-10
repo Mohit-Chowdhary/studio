@@ -30,9 +30,9 @@ const prompt = ai.definePrompt({
   name: 'improvePromptPrompt',
   input: {schema: ImprovePromptInputSchema},
   output: {schema: ImprovePromptOutputSchema},
-  prompt: `You are an expert in crafting effective teaching content prompts.
+  prompt: `You are an expert in crafting effective teaching content prompts. Your goal is to help a teacher create a more specific, detailed, and pedagogically sound request for an AI.
 
-  Given the following prompt, provide a list of suggestions for improvement to get better results:
+  Given the following prompt, provide a list of 3-4 concrete suggestions for improvement to get better, more detailed, and more curriculum-aligned results. Focus on adding specificity, mentioning formats, asking for real-world examples, and aligning with curriculum standards like CBSE.
 
   Prompt: {{{prompt}}}
 

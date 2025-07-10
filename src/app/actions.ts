@@ -9,6 +9,8 @@ import {
 import { textToSpeech, type TextToSpeechOutput } from '@/ai/flows/text-to-speech';
 import { generateLessonPlan, type GenerateLessonPlanInput, type GenerateLessonPlanOutput } from '@/ai/flows/generate-lesson-plan';
 import { gradeDrawing, type GradeDrawingInput, type GradeDrawingOutput } from '@/ai/flows/grade-drawing';
+import { improvePrompt, type ImprovePromptInput, type ImprovePromptOutput } from '@/ai/flows/improve-prompt';
+
 
 export async function generateContentAction(
   input: GenerateTeachingContentInput
@@ -67,5 +69,21 @@ export async function gradeDrawingAction(
   } catch (error) {
     console.error('Error grading drawing:', error);
     return { error: 'An unexpected error occurred while grading the drawing. Please try again.' };
+  }
+}
+
+
+export async function improvePromptAction(
+  input: ImprovePromptInput
+): Promise<ImprovePromptOutput | { error: string }> {
+  try {
+    const result = await improvePrompt(input);
+    if (!result || !result.suggestions || result.suggestions.length === 0) {
+      throw new Error('Failed to get suggestions. The AI model returned an empty response.');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error improving prompt:', error);
+    return { error: 'An unexpected error occurred while getting suggestions. Please try again.' };
   }
 }
